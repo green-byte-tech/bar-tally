@@ -10,10 +10,12 @@ class ListItems extends ListRecords
 {
     protected static string $resource = ItemResource::class;
 
+    protected static ?string $title = 'Products';
+
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()->label('Add New Product'),
         ];
     }
 }

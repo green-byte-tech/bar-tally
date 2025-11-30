@@ -9,4 +9,7 @@ use Filament\Resources\Pages\CreateRecord;
 class CreateItem extends CreateRecord
 {
     protected static string $resource = ItemResource::class;
+
+
+    protected static ?string $title = 'Add New Product';
 }

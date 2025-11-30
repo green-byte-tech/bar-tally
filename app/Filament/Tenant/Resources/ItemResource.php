@@ -14,13 +14,14 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Auth;
 use Filament\Forms\Components\Hidden;
+
 class ItemResource extends Resource
 {
     protected static ?string $model = Item::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
-     protected static ?string $navigationGroup = 'Stock Management';
+    protected static ?string $navigationGroup = 'Stock Management';
 
     protected static ?string $navigationLabel = 'Products';
 
@@ -32,8 +33,9 @@ class ItemResource extends Resource
 
                 Forms\Components\Section::make('Product Details')
                     ->schema([
-                          Hidden::make('tenant_id')
+                        Hidden::make('tenant_id')
                             ->default(fn() => Auth::user()->tenant_id),
+
                         Forms\Components\TextInput::make('name')
                             ->required()
                             ->maxLength(255),
@@ -48,15 +50,10 @@ class ItemResource extends Resource
                             ->nullable(),
 
                         Forms\Components\Select::make('category')
-                            ->options([
-                                'beer' => 'Beer',
-                                'spirits' => 'Spirits',
-                                'wine' => 'Wine',
-                                'soft_drink' => 'Soft Drink',
-                                'food' => 'Food',
-                                'other' => 'Other',
-                            ])
-                            ->nullable(),
+                            ->options(Item::CATEGORIES)
+                            ->searchable()
+                            ->required()
+                            ->label('Category'),
                     ])
                     ->columns(3),
 
@@ -88,31 +85,40 @@ class ItemResource extends Resource
             ->columns([
                 //
 
-                  Tables\Columns\TextColumn::make('name')
+                Tables\Columns\TextColumn::make('name')
                     ->searchable()
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('code')
-                    ->label('SKU')
+                    ->label('CODE / SKU')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('brand')
                     ->sortable()
                     ->toggleable(),
 
-                Tables\Columns\TextColumn::make('category')
-                    ->sortable()
-                    ->toggleable(),
+                Tables\Columns\BadgeColumn::make('category')
+                   ->color('warning')
+                    ->label('Category'),
+                Tables\Columns\BadgeColumn::make('unit')
+                    ->color('gray')
+                    ->label('Unit'),
 
-                Tables\Columns\TextColumn::make('unit')
-                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('selling_price')
                     ->money('KES', divideBy: 1)
-                    ->sortable(),
-
-                Tables\Columns\TextColumn::make('reorder_level')
-                    ->sortable(),
+                    ->sortable()
+                    ->label('Price')
+                    ->formatStateUsing(fn($state) => 'KES ' . number_format($state, 0))
+                    ->color( 'success'),
+                Tables\Columns\BadgeColumn::make('reorder_level')
+                    ->sortable()
+                    ->colors([
+                        'danger' => fn($state) => $state <= 5,     // Low stock warning
+                        'warning' => fn($state) => $state > 5 && $state <= 20,
+                        'success' => fn($state) => $state > 20,
+                    ])
+                    ->label('Reorder'),
             ])
             ->filters([
                 //

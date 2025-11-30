@@ -22,11 +22,11 @@ class UserResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-m-user-group';
 
-    protected static ?string $navigationGroup = 'Settings';
+    protected static ?string $navigationGroup = 'Configurations';
 
-    protected static ?string $navigationLabel = 'User Management';
+    protected static ?string $navigationLabel = 'Users';
 
-    protected static ?string $pluralNavigationLabel = 'User Management';
+    protected static ?string $pluralNavigationLabel = 'Users';
 
     protected static ?string $pluralModelLabel = 'Users';
 
@@ -38,14 +38,6 @@ class UserResource extends Resource
 
     public static function canAccess(): bool
     {
-        $user = auth()->user();
-        // \Log::info('Filament resource access check', [
-        //     'user' => $user->email,
-        //     'role' => $user->role,
-        //     'allowed_roles' => [User::ROLE_TENANT_ADMIN, User::ROLE_SUPER_ADMIN],
-        //     'check_result' => Gate::allows('viewAny', \App\Models\User::class)
-        // ]);
-
         return Gate::allows('viewAny', \App\Models\User::class);
     }
     public static function getEloquentQuery(): Builder

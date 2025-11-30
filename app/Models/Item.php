@@ -21,7 +21,25 @@ class Item extends Model
         'created_by',
         'updated_by',
     ];
-     public function tenant()
+
+    public const CATEGORIES = [
+        'WINE'             => 'WINE',
+        'CREAMY WHISKY'    => 'CREAMY WHISKY',
+        'CHAMPAGNE'        => 'CHAMPAGNE',
+        'CIGARRETTES'      => 'CIGARRETTES',
+        'CONDOMS'          => 'CONDOMS',
+        'RUM/BOUBON'       => 'RUM/BOUBON',
+        'GIN'              => 'GIN',
+        'VODKA'            => 'VODKA',
+        'TEQUILA'          => 'TEQUILA',
+        'WHISKYS/COGNAC'   => 'WHISKYS/COGNAC',
+        'BEERS'            => 'BEERS',
+        'SOFT DRINKS'      => 'SOFT DRINKS',
+        'ENERGY DRINKS'    => 'ENERGY DRINKS',
+        'TOTS'             => 'TOTS',
+    ];
+
+    public function tenant()
     {
         return $this->belongsTo(Tenant::class);
     }
