@@ -22,7 +22,7 @@ class UserResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-m-user-group';
 
-    protected static ?string $navigationGroup = 'Configurations';
+    protected static ?string $navigationGroup = 'Management';
 
     protected static ?string $navigationLabel = 'Users';
 
@@ -32,8 +32,8 @@ class UserResource extends Resource
 
     protected static ?string $modelLabel = 'User';
 
-    protected static ?int $navigationGroupSort = 6;
-    protected static ?int $navigationSort = 8;
+    protected static bool $shouldRegisterNavigation = true;
+
 
 
     public static function canAccess(): bool

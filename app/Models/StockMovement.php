@@ -13,7 +13,7 @@ class StockMovement extends Model
         'counter_id',
         'item_id',
         'movement_type',
-        'qty',
+        'quantity',
         'movement_date',
         'notes',
         'created_by',

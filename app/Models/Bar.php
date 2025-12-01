@@ -4,21 +4,18 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Counter extends Model
+class Bar extends Model
 {
     //
-    protected $fillable = [
+      protected $fillable = [
         'tenant_id',
-        'bar_id',
         'name',
         'description',
         'created_by',
         'updated_by',
     ];
 
-    /* Relationships */
-
-    public function tenant()
+     public function tenant()
     {
         return $this->belongsTo(Tenant::class);
     }
@@ -32,14 +29,9 @@ class Counter extends Model
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
-
-        public function bar()
+    public function counters()
     {
-        return $this->belongsTo(Bar::class);
+        return $this->hasMany(Counter::class);
     }
 
-    public function movements()
-    {
-        return $this->hasMany(StockMovement::class);
-    }
 }
