@@ -24,6 +24,13 @@ class BarResource extends Resource
     protected static ?string $navigationGroup = 'Configurations';
     protected static ?string $navigationLabel = 'Bars';
 
+       public static function canViewAny(): bool
+    {
+        $user = auth()->user();
+        if (!$user) return false;
+
+        return $user->isManager() || $user->isTenantAdmin() || $user->isAdmin() || $user->isManager();
+    }
     public static function form(Form $form): Form
     {
         return $form

@@ -28,7 +28,7 @@ class User extends Authenticatable implements FilamentUser
         'role',
         'tenant_id',
         'bar_id'
-        ];
+    ];
 
     /**
      * The attributes that should be hidden for serialization.
@@ -57,29 +57,43 @@ class User extends Authenticatable implements FilamentUser
     // Define roles as constants
     const ROLE_SUPER_ADMIN = 'super_admin';
     const ROLE_TENANT_ADMIN = 'tenant_admin';
-    const ROLE_CUSTOMER = 'customer';
     const ROLE_ADMIN = 'admin';
-    const ROLE_STAFF = 'staff';
     const ROLE_SYSTEM_ADMIN = 'system_admin';
-    const ROLE_METER_READER = 'meter_reader';
-
+    const ROLE_MANAGER = 'manager';
+    const ROLE_CASHIER = 'cashier';
+    const ROLE_CONTROLLER = 'controller';
+    const ROLE_STOCKIST = 'stockist';
 
     public static function getRoles()
     {
         return [
+            self::ROLE_MANAGER    => 'Manager',
+            self::ROLE_CASHIER    => 'Cashier',
+            self::ROLE_CONTROLLER => 'Controller',
+            self::ROLE_STOCKIST   => 'Stockist',
             self::ROLE_SYSTEM_ADMIN => 'System Admin',
             self::ROLE_TENANT_ADMIN => 'Tenant Admin',
-            self::ROLE_STAFF => 'Staff',
-            self::ROLE_METER_READER => 'Meter Reader',
         ];
     }
 
-    // Relationship to tenant
-    public function tenant(): BelongsTo
-    {
-        return $this->belongsTo(Tenant::class);
-    }
 
+
+    public function isManager()
+    {
+        return $this->role === self::ROLE_MANAGER;
+    }
+    public function isCashier()
+    {
+        return $this->role === self::ROLE_CASHIER;
+    }
+    public function isController()
+    {
+        return $this->role === self::ROLE_CONTROLLER;
+    }
+    public function isStockist()
+    {
+        return $this->role === self::ROLE_STOCKIST;
+    }
     // Check if user is a super admin
     public function isSuperAdmin(): bool
     {
@@ -92,38 +106,33 @@ class User extends Authenticatable implements FilamentUser
         return $this->role === self::ROLE_TENANT_ADMIN;
     }
 
-
-
     // Check if user is an admin
     public function isAdmin(): bool
     {
         return $this->role === self::ROLE_ADMIN;
     }
 
-    // Check if user is a staff
-    public function isStaff(): bool
-    {
-        return $this->role === self::ROLE_STAFF;
-    }
 
     // Implementation of FilamentUser interface
     public function canAccessPanel(Panel $panel): bool
     {
-        // Super admins can access any panel
-        if ($this->isSuperAdmin()) {
+        // Only allow access to the tenant panel
+        if ($panel->getId() !== 'tenant') {
+            return false;
+        }
+
+        // Full access roles
+        if ($this->isSuperAdmin() || $this->isTenantAdmin()) {
             return true;
         }
 
-        // Tenant admins can access their tenant's panel
-        if ($this->isTenantAdmin() && $panel->getId() === 'tenant') {
-            return true;
-        }
-
-        if ($this->isMeterReader() && $panel->getId() === 'tenant') {
-            return true;
-        }
-
-        return false;
+        // Allowed tenant roles
+        return in_array($this->role, [
+            self::ROLE_MANAGER,
+            self::ROLE_CASHIER,
+            self::ROLE_CONTROLLER,
+            self::ROLE_STOCKIST,
+        ]);
     }
 
     // Add query scopes
@@ -152,6 +161,11 @@ class User extends Authenticatable implements FilamentUser
         return $query->where('role', '!=', self::ROLE_CUSTOMER);
     }
 
+    // Relationship to tenant
+    public function tenant(): BelongsTo
+    {
+        return $this->belongsTo(Tenant::class);
+    }
 
     public function openDailySessions()
     {
@@ -161,7 +175,4 @@ class User extends Authenticatable implements FilamentUser
     {
         return $this->hasMany(DailySession::class, 'closed_by');
     }
-
-
-
 }

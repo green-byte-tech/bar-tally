@@ -12,4 +12,11 @@ class StockReport extends Page
 
     protected static string $view = 'filament.tenant.pages.stock-report';
 
+    public static function canAccess(): bool
+    {
+        $user = auth()->user();
+        if (!$user) return false;
+
+        return $user->isManager() || $user->isTenantAdmin() || $user->isAdmin();
+    }
 }

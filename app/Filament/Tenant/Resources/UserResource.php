@@ -36,9 +36,12 @@ class UserResource extends Resource
 
 
 
-    public static function canAccess(): bool
+   public static function canViewAny(): bool
     {
-        return Gate::allows('viewAny', \App\Models\User::class);
+        $user = auth()->user();
+        if (!$user) return false;
+
+        return $user->isManager() || $user->isTenantAdmin() || $user->isAdmin();
     }
     public static function getEloquentQuery(): Builder
     {

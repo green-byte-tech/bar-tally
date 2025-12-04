@@ -29,6 +29,15 @@ class ControllerResource extends Resource
     protected static ?string $navigationGroup = 'Controller';
 
     protected static ?string $navigationLabel = 'Closing Count';
+
+    public static function canViewAny(): bool
+    {
+        $user = auth()->user();
+        if (!$user) return false;
+
+        return $user->isManager() || $user->isTenantAdmin() || $user->isAdmin() || $user->isManager() || $user->isController();
+    }
+
     public static function form(Form $form): Form
     {
         $user = Auth::user();

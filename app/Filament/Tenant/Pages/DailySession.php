@@ -21,6 +21,13 @@ class DailySession extends Page
 
     public ?DailySessionModel $session = null;
 
+    public static function canAccess(): bool
+    {
+        $user = auth()->user();
+        if (!$user) return false;
+
+        return $user->isManager() || $user->isTenantAdmin() || $user->isAdmin();
+    }
     public function mount()
     {
         $this->session = DailySessionModel::with(['opener', 'closer'])

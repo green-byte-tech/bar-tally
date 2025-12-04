@@ -24,6 +24,25 @@ class StocksResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-square-2-stack';
     protected static ?string $navigationGroup = 'Stock Management';
     protected static ?string $navigationLabel = 'Receive Stock';
+
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | PERMISSIONS
+    |--------------------------------------------------------------------------
+    */
+
+    public static function canViewAny(): bool
+    {
+        $user = auth()->user();
+        if (!$user) return false;
+
+        return $user->isManager() || $user->isTenantAdmin() || $user->isAdmin() || $user->isStockist();
+    }
+
+
+
     public static function form(Form $form): Form
     {
         return $form
@@ -113,9 +132,7 @@ class StocksResource extends Resource
 
             ->actions([])
 
-            ->bulkActions([
-
-            ]);
+            ->bulkActions([]);
     }
 
     public static function getRelations(): array

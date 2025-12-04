@@ -25,6 +25,13 @@ class ItemResource extends Resource
 
     protected static ?string $navigationLabel = 'Products';
 
+    public static function canViewAny(): bool
+    {
+        $user = auth()->user();
+        if (!$user) return false;
+
+        return $user->isManager() || $user->isTenantAdmin() || $user->isAdmin() || $user->isManager() || $user->isStockist();
+    }
 
     public static function form(Form $form): Form
     {

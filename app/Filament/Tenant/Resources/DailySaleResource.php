@@ -28,6 +28,14 @@ class DailySaleResource extends Resource
     protected static ?string $navigationGroup = 'Cashier';
     protected static ?string $navigationLabel = 'Record Sales';
 
+    public static function canViewAny(): bool
+    {
+        $user = auth()->user();
+        if (!$user) return false;
+
+        return $user->isManager() || $user->isTenantAdmin() || $user->isAdmin() || $user->isManager() || $user->isCashier();
+    }
+
     public static function form(Form $form): Form
     {
         return $form
