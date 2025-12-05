@@ -50,11 +50,9 @@ class DailySaleResource extends Resource
                             ->label('Counter')
                             ->options(
                                 Counter::query()
-                                    // ->where('bar_id',  Auth::user()->bar_id)
                                     ->pluck('name', 'id')
                             )
-                            ->searchable()
-                            ->required(),
+                            ->searchable(),
 
                         // Select product
                         Forms\Components\Select::make('item_id')
