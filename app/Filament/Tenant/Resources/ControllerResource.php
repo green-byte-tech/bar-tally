@@ -54,7 +54,6 @@ class ControllerResource extends Resource
                             ->label('Counter')
                             ->options(
                                 Counter::query()
-                                    // ->where('bar_id', $user->bar_id)
                                     ->pluck('name', 'id')
                             )
                             ->searchable(),
