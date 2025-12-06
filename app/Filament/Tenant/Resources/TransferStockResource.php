@@ -74,10 +74,11 @@ class TransferStockResource extends Resource
 
     public static function table(Table $table): Table
     {
-       return $table
-            ->modifyQueryUsing(fn ($query) =>
+        return $table
+            ->modifyQueryUsing(
+                fn($query) =>
                 $query->where('movement_type', StockMovementType::TRANSFER_TO_COUNTER)
-                      ->where('tenant_id', Auth::user()->tenant_id)
+                    ->where('tenant_id', Auth::user()->tenant_id)
             )
 
             ->columns([
