@@ -22,7 +22,10 @@ public function panel(Panel $panel): Panel
     }
     public function getWidgets(): array
     {
-        return [];
+        return [
+             \App\Filament\Tenant\Widgets\SalesChart::class,
+                \App\Filament\Tenant\Widgets\StockChart::class,
+        ];
     }
 
     public function getTitle(): string
