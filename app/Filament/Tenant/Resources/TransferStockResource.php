@@ -26,6 +26,14 @@ class TransferStockResource extends Resource
     protected static ?string $navigationGroup = 'Stock Management';
     protected static ?string $navigationLabel = 'Transfer Stock';
 
+
+       public static function canViewAny(): bool
+    {
+        $user = auth()->user();
+        if (!$user) return false;
+
+        return $user->isManager() || $user->isTenantAdmin() || $user->isAdmin() || $user->isManager();
+    }
     public static function form(Form $form): Form
     {
 

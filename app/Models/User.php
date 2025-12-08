@@ -77,7 +77,6 @@ class User extends Authenticatable implements FilamentUser
     }
 
 
-
     public function isManager()
     {
         return $this->role === self::ROLE_MANAGER;
@@ -175,4 +174,13 @@ class User extends Authenticatable implements FilamentUser
     {
         return $this->hasMany(DailySession::class, 'closed_by');
     }
+    public function createdStockMovements()
+    {
+        return $this->hasMany(StockMovement::class, 'created_by');
+    }
+
+   public function counters()
+{
+    return $this->hasMany(Counter::class, 'assigned_user');
+}
 }

@@ -24,7 +24,7 @@ class BarResource extends Resource
     protected static ?string $navigationGroup = 'Configurations';
     protected static ?string $navigationLabel = 'Bars';
 
-       public static function canViewAny(): bool
+    public static function canViewAny(): bool
     {
         $user = auth()->user();
         if (!$user) return false;
@@ -36,7 +36,7 @@ class BarResource extends Resource
         return $form
             ->schema([
                 //
-                 Forms\Components\Section::make('Bar Details')
+                Forms\Components\Section::make('Bar Details')
                     ->schema([
                         Hidden::make('tenant_id')
                             ->default(fn() => Auth::user()->tenant_id),
@@ -62,36 +62,53 @@ class BarResource extends Resource
     {
         return $table
             ->columns([
-                //
-                  Tables\Columns\TextColumn::make('name')
+
+                // BAR NAME
+                Tables\Columns\TextColumn::make('name')
                     ->label('Bar Name')
                     ->sortable()
-                    ->searchable(),
+                    ->searchable()
+                    ->weight('bold')
+                    ->icon('heroicon-o-building-storefront')
+                    ->toggleable(),
 
+                // DESCRIPTION
                 Tables\Columns\TextColumn::make('description')
+                    ->label('Description')
                     ->limit(40)
-                    ->toggleable()
-                    ->placeholder('-'),
+                    ->placeholder('No description')
+                    ->color('gray')
+                    ->toggleable(),
 
-                Tables\Columns\TextColumn::make('creator.name')
+                // CREATED BY
+                Tables\Columns\BadgeColumn::make('creator.name')
                     ->label('Created By')
-                    ->toggleable()
-                    ->sortable(),
+                    ->colors(['info'])
+                    ->icons(['heroicon-o-user'])
+                    ->sortable()
+                    ->toggleable(),
 
+                // CREATED DATE
                 Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime('Y-m-d')
-                    ->label('Created')
-                    ->sortable(),
+                    ->label('Created On')
+                    ->date('M d, Y')
+                    ->sortable()
+                    ->color('gray')
+                    ->icon('heroicon-o-calendar')
+                    ->toggleable(),
             ])
             ->filters([
                 //
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->slideOver()
+                    ->icon('heroicon-o-pencil-square'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->icon('heroicon-o-trash'),
                 ]),
             ]);
     }

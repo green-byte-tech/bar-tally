@@ -3,21 +3,16 @@
 namespace App\Filament\Tenant\Resources;
 
 use App\Filament\Tenant\Resources\CounterInventoryResource\Pages;
-use App\Filament\Tenant\Resources\CounterInventoryResource\RelationManagers;
-use App\Models\CounterInventory;
 use App\Models\StockMovement;
-use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
+use App\Models\Item;
+use App\Models\Counter;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Illuminate\Support\Facades\DB;
-use App\Models\Item;
-use App\Models\Counter;
-use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Resources\Resource;
 
 
 class CounterInventoryResource extends Resource
@@ -28,85 +23,97 @@ class CounterInventoryResource extends Resource
     protected static ?string $navigationGroup = 'Cashier';
     protected static ?string $navigationLabel = 'Counter Inventory';
 
-
-
     public static function table(Table $table): Table
     {
-       return $table
-           ->modifyQueryUsing(function (Builder $query) {
+        return $table
+            ->modifyQueryUsing(function (Builder $query) {
+                $counterId = Auth::user()->counters()->first()?->id;
 
-                // Default: force filter until user chooses a counter
-                $counterId = request('tableFilters')['counter_id']['value'] ?? null;
-
-                $base = StockMovement::select([
-                    'item_id as id',
-                    'item_id',
-                    'counter_id',
-                    DB::raw("SUM(CASE WHEN movement_type = 'transfer_to_counter' THEN quantity ELSE 0 END) AS stock_in"),
-                    DB::raw("SUM(CASE WHEN movement_type = 'sale' THEN quantity ELSE 0 END) AS stock_out"),
-                    DB::raw("(SUM(CASE WHEN movement_type = 'transfer_to_counter' THEN quantity ELSE 0 END)
-                           - SUM(CASE WHEN movement_type = 'sale' THEN quantity ELSE 0 END)) AS current_stock"),
-                ])
-                ->join('items', 'items.id', '=', 'stock_movements.item_id')
-                ->where('stock_movements.tenant_id', Auth::user()->tenant_id);
-
-                if ($counterId) {
-                    $base->where('stock_movements.counter_id', $counterId);
-                } else {
-                    $base->where('stock_movements.counter_id', -1); // show empty until chosen
+                if (!$counterId) {
+                    return Item::query()->whereRaw('1 = 0'); // force empty until counter selected
                 }
 
-                return $base
-                    ->groupBy('item_id', 'counter_id', 'items.reorder_level')
-                    ->orderBy('item_id', 'asc');
+                return Item::query()
+                    ->select([
+                        'items.id',
+                        'items.name AS item_name',
+                        'items.reorder_level',
+                        DB::raw("
+                COALESCE(SUM(CASE WHEN sm.movement_type = 'transfer_to_counter' THEN sm.quantity END), 0)
+                AS stock_in
+            "),
+                        DB::raw("
+                COALESCE(SUM(CASE WHEN sm.movement_type = 'sale' THEN sm.quantity END), 0)
+                AS stock_out
+            "),
+                        DB::raw("
+                COALESCE(SUM(CASE WHEN sm.movement_type = 'transfer_to_counter' THEN sm.quantity END), 0)
+                -
+                COALESCE(SUM(CASE WHEN sm.movement_type = 'sale' THEN sm.quantity END), 0)
+                AS current_stock
+            "),
+                    ])
+                    ->leftJoin('stock_movements as sm', function ($join) use ($counterId) {
+                        $join->on('items.id', '=', 'sm.item_id')
+                            ->where('sm.counter_id', $counterId)
+                            ->where('sm.tenant_id', Auth::user()->tenant_id);
+                    })
+                    ->where('items.tenant_id', Auth::user()->tenant_id)
+                    ->groupBy('items.id', 'items.name', 'items.reorder_level')
+                    ->orderBy('items.name');
             })
 
+
             ->columns([
-                Tables\Columns\TextColumn::make('item.name')
+                Tables\Columns\TextColumn::make('item_name')
                     ->label('Item')
+                    ->weight('bold')
+                    ->icon('heroicon-o-cube')
                     ->sortable()
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('stock_in')
                     ->label('Stock In')
-                    ->numeric()
-                    ->sortable(),
+                    ->sortable()
+                    ->badge()
+                    ->color('info'),
 
                 Tables\Columns\TextColumn::make('stock_out')
                     ->label('Sold')
-                    ->numeric()
-                    ->sortable(),
+                    ->sortable()
+                    ->badge()
+                    ->color('danger'),
 
                 Tables\Columns\BadgeColumn::make('current_stock')
                     ->label('Current Stock')
+                    ->colors([
+                        'danger' => fn($record) => $record->current_stock <= 0,
+                        'warning' => fn($record) => $record->current_stock > 0 && $record->current_stock <= $record->reorder_level,
+                        'success' => fn($record) => $record->current_stock > $record->reorder_level,
+                    ])
                     ->formatStateUsing(function ($state, $record) {
-                        $level = $record->item->reorder_level;
 
-                        if ($state == 0) {
-                            return "0 (Out of Stock)";
+                        if ($state <= 0) {
+                            return "{$state} (Out of Stock)";
                         }
 
-                        if ($state < $level) {
+                        if ($state < $record->reorder_level) {
                             return "{$state} (Below Reorder)";
                         }
 
-                        if ($state == $level) {
-                            return "{$state} (At Reorder Level)";
+                        if ($state == $record->reorder_level) {
+                            return "{$state} (At Reorder)";
                         }
 
                         return "{$state} (OK)";
                     })
-                    ->colors([
-                        'danger' => fn ($record) => $record->current_stock == 0,
-                        'warning' => fn ($record) => $record->current_stock > 0 && $record->current_stock < $record->item->reorder_level,
-                        'warning' => fn ($record) => $record->current_stock == $record->item->reorder_level,
-                        'success' => fn ($record) => $record->current_stock > $record->item->reorder_level,
-                    ])
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('item.reorder_level')
+                Tables\Columns\TextColumn::make('reorder_level')
                     ->label('Reorder Level')
-                    ->sortable(),
+                    ->color('gray')
+                    ->sortable()
+                    ->icon('heroicon-o-arrow-trending-down'),
             ])
 
             ->filters([
@@ -115,18 +122,13 @@ class CounterInventoryResource extends Resource
                     ->options(
                         Counter::where('tenant_id', Auth::user()->tenant_id)->pluck('name', 'id')
                     )
-                    ->placeholder('Select Counter'),
+                    ->placeholder('Select Counter')
+                    ->searchable(),
             ])
 
+            ->defaultSort('item_name')
             ->actions([])
             ->bulkActions([]);
-    }
-
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
     }
 
     public static function getPages(): array

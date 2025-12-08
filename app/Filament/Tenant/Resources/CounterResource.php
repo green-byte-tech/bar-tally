@@ -23,7 +23,7 @@ class CounterResource extends Resource
     protected static ?string $navigationGroup = 'Configurations';
     protected static ?string $navigationLabel = 'Counters';
 
-         public static function canViewAny(): bool
+    public static function canViewAny(): bool
     {
         $user = auth()->user();
         if (!$user) return false;
@@ -60,7 +60,14 @@ class CounterResource extends Resource
                             ->rows(3)
                             ->maxLength(500)
                             ->nullable(),
-
+                        Forms\Components\Select::make('assigned_user')
+                            ->label('Assigned User')
+                            ->required()
+                            ->searchable()
+                            ->options(
+                                \App\Models\User::where('tenant_id', Auth::user()->tenant_id)
+                                    ->pluck('name', 'id')
+                            ),
                     ])
                     ->columns(1),
             ]);
@@ -68,44 +75,77 @@ class CounterResource extends Resource
 
     public static function table(Table $table): Table
     {
-        return $table
-            ->columns([
-                //
-                Tables\Columns\TextColumn::make('bar.name')
-                    ->label('Bar')
-                    ->toggleable()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('name')
-                    ->label('Counter')
-                    ->sortable()
-                    ->searchable(),
+       return $table
+    ->columns([
 
-                Tables\Columns\TextColumn::make('description')
-                    ->limit(40)
-                    ->toggleable()
-                    ->placeholder('-'),
+        // BAR
+        Tables\Columns\BadgeColumn::make('bar.name')
+            ->label('Bar')
+            ->colors(['primary'])
+            ->icons(['heroicon-o-building-storefront'])
+            ->sortable()
+            ->toggleable(),
 
-                Tables\Columns\TextColumn::make('creator.name')
-                    ->label('Created By')
-                    ->toggleable()
-                    ->sortable(),
+        // COUNTER NAME
+        Tables\Columns\TextColumn::make('name')
+            ->label('Counter')
+            ->sortable()
+            ->searchable()
+            ->weight('bold')
+            ->icon('heroicon-o-rectangle-group')
+            ->toggleable(),
 
-                Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime('Y-m-d')
-                    ->label('Created')
-                    ->sortable(),
-            ])
-            ->filters([
-                //
-            ])
-            ->actions([
-                Tables\Actions\EditAction::make()->slideOver(),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ]);
+        // DESCRIPTION
+        Tables\Columns\TextColumn::make('description')
+            ->label('Description')
+            ->limit(40)
+            ->placeholder('No description')
+            ->color('gray')
+            ->toggleable(),
+
+        // CREATED BY
+        Tables\Columns\TextColumn::make('creator.name')
+            ->label('Created By')
+            ->sortable()
+            ->badge()
+            ->color('info')
+            ->icon('heroicon-o-user')
+            ->toggleable(),
+
+        // ASSIGNED USER
+        Tables\Columns\BadgeColumn::make('assignedUser.name')
+            ->label('Assigned User')
+            ->colors(['success'])
+            ->icons(['heroicon-o-user-circle'])
+            ->sortable()
+            ->searchable()
+            ->toggleable(),
+
+        // CREATED DATE
+        Tables\Columns\TextColumn::make('created_at')
+            ->label('Created On')
+            ->date('M d, Y')
+            ->sortable()
+            ->color('gray')
+            ->icon('heroicon-o-calendar')
+            ->toggleable(),
+
+    ])
+    ->filters([
+        // add later
+    ])
+    ->actions([
+        Tables\Actions\EditAction::make()
+            ->slideOver()
+            ->icon('heroicon-o-pencil-square'),
+    ])
+    ->bulkActions([
+        Tables\Actions\BulkActionGroup::make([
+            Tables\Actions\DeleteBulkAction::make()
+                ->icon('heroicon-o-trash'),
+        ]),
+    ]);
+
     }
 
     public static function getRelations(): array

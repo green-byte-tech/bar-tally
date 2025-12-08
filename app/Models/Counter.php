@@ -14,6 +14,7 @@ class Counter extends Model
         'description',
         'created_by',
         'updated_by',
+        'assigned_user',
     ];
 
     /* Relationships */
@@ -41,5 +42,9 @@ class Counter extends Model
     public function movements()
     {
         return $this->hasMany(StockMovement::class);
+    }
+    public function assignedUser()
+    {
+        return $this->belongsTo(User::class, 'assigned_user');
     }
 }
