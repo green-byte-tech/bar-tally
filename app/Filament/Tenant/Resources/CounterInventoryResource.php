@@ -23,46 +23,48 @@ class CounterInventoryResource extends Resource
     protected static ?string $navigationGroup = 'Cashier';
     protected static ?string $navigationLabel = 'Counter Inventory';
 
+    public static function getWidgets(): array
+{
+    return [
+        \App\Filament\Tenant\Resources\CounterInventoryResource\Widgets\InventoryChart::class,
+    ];
+}
+
     public static function table(Table $table): Table
     {
         return $table
             ->modifyQueryUsing(function (Builder $query) {
-                $counterId = Auth::user()->counters()->first()?->id;
-
-                if (!$counterId) {
-                    return Item::query()->whereRaw('1 = 0'); // force empty until counter selected
-                }
-
                 return Item::query()
                     ->select([
                         'items.id',
                         'items.name AS item_name',
                         'items.reorder_level',
+
                         DB::raw("
-                COALESCE(SUM(CASE WHEN sm.movement_type = 'transfer_to_counter' THEN sm.quantity END), 0)
+                COALESCE(SUM(CASE WHEN sm.movement_type = 'restock' THEN sm.quantity END), 0)
                 AS stock_in
             "),
+
                         DB::raw("
                 COALESCE(SUM(CASE WHEN sm.movement_type = 'sale' THEN sm.quantity END), 0)
                 AS stock_out
             "),
+
                         DB::raw("
-                COALESCE(SUM(CASE WHEN sm.movement_type = 'transfer_to_counter' THEN sm.quantity END), 0)
+                COALESCE(SUM(CASE WHEN sm.movement_type = 'restock' THEN sm.quantity END), 0)
                 -
                 COALESCE(SUM(CASE WHEN sm.movement_type = 'sale' THEN sm.quantity END), 0)
                 AS current_stock
             "),
                     ])
-                    ->leftJoin('stock_movements as sm', function ($join) use ($counterId) {
+                    ->leftJoin('stock_movements as sm', function ($join) {
                         $join->on('items.id', '=', 'sm.item_id')
-                            ->where('sm.counter_id', $counterId)
                             ->where('sm.tenant_id', Auth::user()->tenant_id);
                     })
                     ->where('items.tenant_id', Auth::user()->tenant_id)
                     ->groupBy('items.id', 'items.name', 'items.reorder_level')
                     ->orderBy('items.name');
             })
-
 
             ->columns([
                 Tables\Columns\TextColumn::make('item_name')
