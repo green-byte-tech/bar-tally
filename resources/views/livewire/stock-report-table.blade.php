@@ -1,6 +1,65 @@
 <div class="space-y-6 p-4 rounded-md
     bg-white dark:bg-gray-900
     text-gray-800 dark:text-gray-200">
+    <div id="chart-wrapper" class="w-full" style="height: 300px; position: relative;">
+        <canvas id="variationChart"></canvas>
+    </div>
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+
+function renderVariationChart() {
+    const chartData = @json($chartData);
+
+    // Debug
+    console.log("Rendering chart with:", chartData);
+
+    const canvas = document.getElementById('variationChart');
+    if (!canvas) {
+        console.warn("variationChart canvas not found");
+        return;
+    }
+
+    // Destroy any previous chart
+    if (window._variationChartInstance instanceof Chart) {
+        window._variationChartInstance.destroy();
+    }
+
+    window._variationChartInstance = new Chart(canvas.getContext("2d"), {
+        type: "bar",
+        data: {
+            labels: chartData.labels,
+            datasets: [{
+                label: "Variance",
+                data: chartData.variance,
+                backgroundColor: chartData.variance.map(v =>
+                    v < 0 ? "#ef4444" : "#22c55e"
+                ),
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+}
+
+// Run once when the page loads
+document.addEventListener("DOMContentLoaded", renderVariationChart);
+
+// Run again after ANY Livewire DOM updates (filters, pagination, sorting)
+document.addEventListener("livewire:navigated", renderVariationChart);
+
+</script>
+@endpush
+
+
+
 
     <!-- EXPORT BUTTON -->
     <div class="flex justify-end">
@@ -38,7 +97,7 @@
                        focus:border-primary-500 focus:ring-primary-500">
                 <option value="">All Items</option>
                 @foreach($items as $it)
-                    <option value="{{ $it->id }}">{{ $it->name }}</option>
+                <option value="{{ $it->id }}">{{ $it->name }}</option>
                 @endforeach
             </select>
         </div>
@@ -66,49 +125,49 @@
             </thead>
 
             @php
-                $grouped = $rows->groupBy('item_id');
+            $grouped = $rows->groupBy('item_id');
 
-                // Totals accumulator
-                $totals = [
-                    'opening'  => 0,
-                    'restock'  => 0,
-                    'sold'     => 0,
-                    'closing'  => 0,
-                    'expected' => 0,
-                    'variance' => 0,
-                    'profit'   => 0,
-                    'cost'     => 0,
-                    'selling'  => 0,
-                ];
+            // Totals accumulator
+            $totals = [
+            'opening' => 0,
+            'restock' => 0,
+            'sold' => 0,
+            'closing' => 0,
+            'expected' => 0,
+            'variance' => 0,
+            'profit' => 0,
+            'cost' => 0,
+            'selling' => 0,
+            ];
             @endphp
 
             <tbody>
-            @forelse($grouped as $itemId => $movements)
+                @forelse($grouped as $itemId => $movements)
 
                 @php
-                    $item = $movements->first();
-                    $opening = $movements->where('movement_type','opening_stock')->sum('quantity');
-                    $restock = $movements->where('movement_type','restock')->sum('quantity');
-                    $sold    = $movements->where('movement_type','sale')->sum('quantity');
-                    $closing = $movements->where('movement_type','closing_stock')->sum('quantity');
+                $item = $movements->first();
+                $opening = $movements->where('movement_type','opening_stock')->sum('quantity');
+                $restock = $movements->where('movement_type','restock')->sum('quantity');
+                $sold = $movements->where('movement_type','sale')->sum('quantity');
+                $closing = $movements->where('movement_type','closing_stock')->sum('quantity');
 
-                    $expected = $opening + $restock - $sold;
-                    $variance = $expected - $closing;
+                $expected = $opening + $restock - $sold;
+                $variance = $expected - $closing;
 
-                    $cost     = floatval($item->cost_price ?? 0);
-                    $selling  = floatval($item->selling_price ?? 0);
-                    $profit   = $sold * ($selling - $cost);
+                $cost = floatval($item->cost_price ?? 0);
+                $selling = floatval($item->selling_price ?? 0);
+                $profit = $sold * ($selling - $cost);
 
-                    // Accumulate totals
-                    $totals['opening']  += $opening;
-                    $totals['restock']  += $restock;
-                    $totals['sold']     += $sold;
-                    $totals['closing']  += $closing;
-                    $totals['expected'] += $expected;
-                    $totals['variance'] += $variance;
-                    $totals['profit']   += $profit;
-                    $totals['cost']     += $cost;
-                    $totals['selling']  += $selling;
+                // Accumulate totals
+                $totals['opening'] += $opening;
+                $totals['restock'] += $restock;
+                $totals['sold'] += $sold;
+                $totals['closing'] += $closing;
+                $totals['expected'] += $expected;
+                $totals['variance'] += $variance;
+                $totals['profit'] += $profit;
+                $totals['cost'] += $cost;
+                $totals['selling'] += $selling;
                 @endphp
 
                 <tr class="transition hover:bg-gray-200/50 dark:hover:bg-gray-700/50">
@@ -134,18 +193,18 @@
 
                     <td class="p-3 text-center font-bold">
                         @if($variance > 0)
-                            <span class="px-2 py-1 rounded-full bg-green-200 text-green-700 dark:bg-green-900/40 dark:text-green-300">
-                                +{{ $variance }}
-                            </span>
+                        <span class="px-2 py-1 rounded-full bg-green-200 text-green-700 dark:bg-green-900/40 dark:text-green-300">
+                            +{{ $variance }}
+                        </span>
                         @elseif($variance < 0)
                             <span class="px-2 py-1 rounded-full bg-red-200 text-red-700 dark:bg-red-900/40 dark:text-red-300">
-                                {{ $variance }}
+                            {{ $variance }}
                             </span>
-                        @else
+                            @else
                             <span class="px-2 py-1 rounded-full bg-gray-300 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
                                 0
                             </span>
-                        @endif
+                            @endif
                     </td>
 
                     <td class="p-3 text-center">{{ number_format($cost, 2) }}</td>
@@ -163,13 +222,13 @@
 
                 </tr>
 
-            @empty
+                @empty
                 <tr>
                     <td colspan="10" class="p-4 text-center text-gray-500 dark:text-gray-400">
                         No data found.
                     </td>
                 </tr>
-            @endforelse
+                @endforelse
             </tbody>
 
             <!-- FOOTER TOTALS ROW -->
@@ -184,19 +243,19 @@
 
                     <td class="p-3 text-center">
                         @if($totals['variance'] > 0)
-                            <span class="px-2 py-1 rounded bg-green-200 text-green-700 dark:bg-green-900/40 dark:text-green-300">
-                                +{{ $totals['variance'] }}
-                            </span>
+                        <span class="px-2 py-1 rounded bg-green-200 text-green-700 dark:bg-green-900/40 dark:text-green-300">
+                            +{{ $totals['variance'] }}
+                        </span>
                         @elseif($totals['variance'] < 0)
                             <span class="px-2 py-1 rounded bg-red-200 text-red-700 dark:bg-red-900/40 dark:text-red-300">
-                                {{ $totals['variance'] }}
+                            {{ $totals['variance'] }}
                             </span>
-                        @else
+                            @else
                             0
-                        @endif
+                            @endif
                     </td>
 
-                      <td class="p-3 text-center font-bold">
+                    <td class="p-3 text-center font-bold">
                         <span class="px-2 py-1 rounded bg-blue-200 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
                             KES {{ number_format($totals['cost'], 2) }}
                         </span>
@@ -216,6 +275,10 @@
             </tfoot>
 
         </table>
-    </div>
 
+
+    </div>
+    <div class="mt-6 flex justify-center">
+        {{ $rows->links() }}
+    </div>
 </div>
