@@ -138,7 +138,7 @@ class StocksResource extends Resource
             ])
             ->modifyQueryUsing(
                 fn($query) =>
-                $query->where('movement_type', StockMovementType::RESTOCK)->where('tenant_id', auth()->user()->tenant_id))
+                $query->where('movement_type', StockMovementType::RESTOCK)->where('tenant_id', auth()->user()->tenant_id)
             )
 
             ->columns([
