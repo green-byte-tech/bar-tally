@@ -12,6 +12,8 @@ class ListStocks extends ListRecords
 
         protected static ?string $title = 'Stocks in Store';
 
+
+
     protected function getHeaderActions(): array
     {
         return [

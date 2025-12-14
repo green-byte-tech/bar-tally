@@ -32,6 +32,11 @@ class StocksResource extends Resource
     protected static ?int $navigationSort = 2;
 
 
+   protected function getSubheading(): ?string
+{
+    return 'Use Download Template to prepare stock intake, then Import Stock to allocate quantities to each counter (shown as Counter Qty / Total).';
+}
+
     /*
     |--------------------------------------------------------------------------
     | PERMISSIONS
@@ -167,10 +172,6 @@ class StocksResource extends Resource
                         'success' => fn($state) => true,
                     ])
                     ->formatStateUsing(fn($state) => "{$state}"),
-
-                // Tables\Columns\TextColumn::make('notes')
-                //     ->limit(30)
-                //     ->placeholder('-'),
 
                 Tables\Columns\TextColumn::make('creator.name')
                     ->label('Recorded By')

@@ -14,6 +14,12 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Auth;
 use Filament\Forms\Components\Hidden;
+use App\Services\Item\ItemTemplateService;
+use App\Services\Item\ItemImportService;
+use Filament\Tables\Actions\Action;
+use App\Support\SalesImportHandler;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Session;
 
 class ItemResource extends Resource
 {
@@ -24,7 +30,7 @@ class ItemResource extends Resource
     protected static ?string $navigationGroup = 'Stock Management';
 
     protected static ?string $navigationLabel = 'Products';
-        protected static ?int $navigationSort = 0;
+    protected static ?int $navigationSort = 0;
 
 
     public static function canViewAny(): bool
@@ -91,6 +97,41 @@ class ItemResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->headerActions([
+                Action::make('downloadTemplate')
+                    ->label('Download Template')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->color('success')
+                    ->action(fn() => app(ItemTemplateService::class)->downloadTemplate()),
+
+                Action::make('importItems')
+                    ->label('Import Items')
+                    ->icon('heroicon-o-arrow-up-tray')
+                    ->form([
+                        Forms\Components\FileUpload::make('file')
+                            ->required()
+                            ->disk('local')
+                            ->directory('imports/tmp')
+                            ->preserveFilenames(),
+                    ])
+                    ->action(function (array $data) {
+
+                        $service = app(\App\Services\Item\ItemImportService::class);
+
+                        $result = $service->preparePreview($data['file']);
+
+                        session([
+                            'item-import-rows' => $result['rows'],
+                            'item-import-file' => $result['file'],
+                        ]);
+
+                        return redirect(
+                            \App\Filament\Tenant\Pages\ItemImportPreview::getUrl()
+                        );
+                    })
+
+            ])
+
             ->columns([
                 //
 
@@ -107,7 +148,7 @@ class ItemResource extends Resource
                     ->toggleable(),
 
                 Tables\Columns\BadgeColumn::make('category')
-                   ->color('warning')
+                    ->color('warning')
                     ->label('Category'),
                 Tables\Columns\BadgeColumn::make('unit')
                     ->color('gray')
@@ -119,7 +160,7 @@ class ItemResource extends Resource
                     ->sortable()
                     ->label('Price')
                     ->formatStateUsing(fn($state) => 'KES ' . number_format($state, 0))
-                    ->color( 'success'),
+                    ->color('success'),
                 Tables\Columns\BadgeColumn::make('reorder_level')
                     ->sortable()
                     ->colors([
