@@ -5,12 +5,14 @@ namespace App\Filament\Tenant\Resources\StocksResource\Pages;
 use App\Filament\Tenant\Resources\StocksResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
+use Illuminate\Database\Eloquent\Model;
+
 
 class ListStocks extends ListRecords
 {
     protected static string $resource = StocksResource::class;
 
-        protected static ?string $title = 'Stocks in Store';
+    protected static ?string $title = 'Stocks in Store';
 
 
 

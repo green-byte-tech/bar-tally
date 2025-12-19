@@ -34,7 +34,7 @@ class ItemImportService
             foreach ($rows as $row) {
 
                 $row = collect($row)
-                    ->mapWithKeys(fn ($v, $k) => [strtolower(trim($k)) => $v])
+                    ->mapWithKeys(fn($v, $k) => [strtolower(trim($k)) => $v])
                     ->toArray();
 
                 $code = trim($row['code'] ?? '');
@@ -44,10 +44,6 @@ class ItemImportService
                     continue;
                 }
 
-                if (!isset(Item::CATEGORIES[$row['category'] ?? ''])) {
-                    throw new \RuntimeException("Invalid category: {$row['category']}");
-                }
-
                 Item::updateOrCreate(
                     [
                         'tenant_id' => $tenantId,
@@ -55,8 +51,8 @@ class ItemImportService
                     ],
                     [
                         'name'          => $name,
-                        'brand'         => $row['brand'] ?? null,
-                        'category'      => $row['category'],
+                        'brand'         => null,
+                        'category'      => null,
                         'unit'          => $row['unit'] ?? 'PCS',
                         'cost_price'    => (float) ($row['cost_price'] ?? 0),
                         'selling_price' => (float) ($row['selling_price'] ?? 0),

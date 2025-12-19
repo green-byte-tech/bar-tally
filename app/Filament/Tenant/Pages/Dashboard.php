@@ -24,9 +24,7 @@ public function panel(Panel $panel): Panel
 public function getWidgets(): array
 {
     return [
-        \App\Filament\Tenant\Widgets\DashboardQuickStats::class,
-        \App\Filament\Tenant\Widgets\SalesChart::class,
-        \App\Filament\Tenant\Widgets\StockChart::class,
+
     ];
 }
 

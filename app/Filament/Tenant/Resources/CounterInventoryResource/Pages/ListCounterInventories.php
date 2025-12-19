@@ -14,7 +14,7 @@ class ListCounterInventories extends ListRecords
     protected function getHeaderWidgets(): array
     {
         return [
-            InventoryChart::class,
+
         ];
     }
 

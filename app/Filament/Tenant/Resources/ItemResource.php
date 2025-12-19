@@ -20,6 +20,8 @@ use Filament\Tables\Actions\Action;
 use App\Support\SalesImportHandler;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Session;
+use Filament\Forms\Components\Select;
+
 
 class ItemResource extends Resource
 {
@@ -60,10 +62,6 @@ class ItemResource extends Resource
                             ->maxLength(255)
                             ->unique(ignoreRecord: true),
 
-                        Forms\Components\TextInput::make('brand')
-                            ->maxLength(255)
-                            ->nullable(),
-
                         Forms\Components\Select::make('category')
                             ->options(Item::CATEGORIES)
                             ->searchable()
@@ -74,15 +72,25 @@ class ItemResource extends Resource
 
                 Forms\Components\Section::make('Pricing & Stock')
                     ->schema([
+
                         Forms\Components\TextInput::make('unit')
                             ->required()
-                            ->placeholder('BTT / GL / PCS'),
+                            ->placeholder('BTT / GL / PCS')
+                            ->datalist([
+                                'BTT',
+                                'GL',
+                                'PCS',
+                            ]),
+
+
 
                         Forms\Components\TextInput::make('cost_price')
+                            ->label('Buying Price')
                             ->numeric()
                             ->nullable(),
 
                         Forms\Components\TextInput::make('selling_price')
+                            ->label('Selling Price')
                             ->numeric()
                             ->nullable(),
 
@@ -134,41 +142,39 @@ class ItemResource extends Resource
 
             ->columns([
                 //
-
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
                     ->sortable(),
-
                 Tables\Columns\TextColumn::make('code')
                     ->label('CODE / SKU')
                     ->sortable(),
-
-                Tables\Columns\TextColumn::make('brand')
-                    ->sortable()
-                    ->toggleable(),
-
-                Tables\Columns\BadgeColumn::make('category')
-                    ->color('warning')
-                    ->label('Category'),
+                Tables\Columns\TextColumn::make('category')
+                    ->label('Category')
+                    ->sortable(),
                 Tables\Columns\BadgeColumn::make('unit')
                     ->color('gray')
                     ->label('Unit'),
-
+                Tables\Columns\TextColumn::make('cost_price')
+                    ->money('KES', divideBy: 1)
+                    ->sortable()
+                    ->label('Buying Price')
+                    ->formatStateUsing(fn($state) => 'KES ' . number_format($state, 0))
+                    ->color('primary'),
 
                 Tables\Columns\TextColumn::make('selling_price')
                     ->money('KES', divideBy: 1)
                     ->sortable()
-                    ->label('Price')
+                    ->label('Selling Price')
                     ->formatStateUsing(fn($state) => 'KES ' . number_format($state, 0))
                     ->color('success'),
                 Tables\Columns\BadgeColumn::make('reorder_level')
+                    ->label('Reorder Level')
                     ->sortable()
                     ->colors([
                         'danger' => fn($state) => $state <= 5,     // Low stock warning
                         'warning' => fn($state) => $state > 5 && $state <= 20,
                         'success' => fn($state) => $state > 20,
-                    ])
-                    ->label('Reorder'),
+                    ]),
             ])
             ->filters([
                 //

@@ -11,8 +11,6 @@ class ItemTemplateService
         $headers = [
             'name',
             'code',
-            'brand',
-            'category',
             'unit',
             'cost_price',
             'selling_price',
@@ -20,7 +18,7 @@ class ItemTemplateService
         ];
 
         $csv = implode(',', $headers) . "\n";
-        $csv .= "Sample Product,SAMPLE001,Brand,WINE,BTT,0,0,5\n";
+        $csv .= "Sample Product,SAMPLE001,BTT,0,0,5\n";
 
         $fileName = 'item_import_template_' . now()->format('Ymd_His') . '.csv';
         $path = storage_path('app/' . $fileName);

@@ -1,64 +1,6 @@
 <div class="space-y-6 p-4 rounded-md
     bg-white dark:bg-gray-900
     text-gray-800 dark:text-gray-200">
-    <div id="chart-wrapper" class="w-full" style="height: 300px; position: relative;">
-        <canvas id="variationChart"></canvas>
-    </div>
-
-    @push('scripts')
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <script>
-        function renderVariationChart() {
-            const chartData = @json($chartData);
-
-            // Debug
-            console.log("Rendering chart with:", chartData);
-
-            const canvas = document.getElementById('variationChart');
-            if (!canvas) {
-                console.warn("variationChart canvas not found");
-                return;
-            }
-
-            // Destroy any previous chart
-            if (window._variationChartInstance instanceof Chart) {
-                window._variationChartInstance.destroy();
-            }
-
-            window._variationChartInstance = new Chart(canvas.getContext("2d"), {
-                type: "bar",
-                data: {
-                    labels: chartData.labels,
-                    datasets: [{
-                        label: "Variance",
-                        data: chartData.variance,
-                        backgroundColor: chartData.variance.map(v =>
-                            v < 0 ? "#ef4444" : "#22c55e"
-                        ),
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    }
-                }
-            });
-        }
-
-        // Run once when the page loads
-        document.addEventListener("DOMContentLoaded", renderVariationChart);
-
-        // Run again after ANY Livewire DOM updates (filters, pagination, sorting)
-        document.addEventListener("livewire:navigated", renderVariationChart);
-    </script>
-    @endpush
-
-
 
 
     <!-- EXPORT BUTTON -->
@@ -120,7 +62,7 @@
                     <th class="p-3 text-center font-medium">Variance</th>
                     <th class="p-3 text-center font-medium">Cost</th>
                     <th class="p-3 text-center font-medium">Selling</th>
-                    <th class="p-3 text-center font-medium">Profit</th>
+                    <th class="p-3 text-center font-medium">Expected Profit</th>
                 </tr>
             </thead>
 
@@ -156,6 +98,7 @@
 
                 $cost = floatval($item->cost_price ?? 0);
                 $selling = floatval($item->selling_price ?? 0);
+                $finalprofit = ($cost* $sold)- ($selling * $sold);
                 $profit = $sold * ($selling - $cost);
 
                 // Accumulate totals
@@ -165,7 +108,7 @@
                 $totals['closing'] += $closing;
                 $totals['expected'] += $expected;
                 $totals['variance'] += $variance;
-                $totals['profit'] += $profit;
+                $totals['profit'] += $finalprofit;
                 $totals['cost'] += $cost;
                 $totals['selling'] += $selling;
                 @endphp

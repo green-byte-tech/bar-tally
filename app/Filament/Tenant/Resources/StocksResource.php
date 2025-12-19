@@ -23,6 +23,9 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Session;
 use App\Services\Stock\StockTemplateService;
 use App\Services\Stock\StockImportService;
+use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Hidden;
 
 class StocksResource extends Resource
 {
@@ -33,10 +36,10 @@ class StocksResource extends Resource
     protected static ?int $navigationSort = 2;
 
 
-   protected function getSubheading(): ?string
-{
-    return 'Use Download Template to prepare stock intake, then Import Stock to allocate quantities to each counter (shown as Counter Qty / Total).';
-}
+    protected function getSubheading(): ?string
+    {
+        return 'Use Download Template to prepare stock intake, then Import Stock to allocate quantities to each counter (shown as Counter Qty / Total).';
+    }
 
     /*
     |--------------------------------------------------------------------------
@@ -57,67 +60,80 @@ class StocksResource extends Resource
     {
         return $form
             ->schema([
-
-                Forms\Components\Section::make('Receive Stock')
-                    ->description('Record stock received into central store')
+                Forms\Components\Section::make('Receive Stock (Excel Style)')
+                    ->description('Allocate received stock across counters')
                     ->schema([
 
-                            Forms\Components\Select::make('counter_id')
-                        ->label('Counter')
-                        ->options(
-                            Counter::query()
-                                ->where('tenant_id', Auth::user()->tenant_id)
-                                ->orderBy('name')
-                                ->pluck('name', 'id')
-                        )
-                        ->searchable()
-                        ->placeholder('Central Store / Warehouse')
-                        ->helperText('Leave empty if stock is received into the main store')
-                        ->nullable(),
+                        // ROW 1: Product + Total
+                        Forms\Components\Grid::make(2)->schema([
+                            Forms\Components\Select::make('item_id')
+                                ->label('Product')
+                                ->options(
+                                    Item::where('tenant_id', Auth::user()->tenant_id)
+                                        ->pluck('name', 'id')
+                                )
+                                ->searchable()
+                                ->required(),
 
-                        Forms\Components\Select::make('item_id')
-                            ->label('Item')
-                            ->options(
-                                Item::query()
-                                    ->where('tenant_id', Auth::user()->tenant_id)
-                                    ->orderBy('name')
-                                    ->pluck('name', 'id')
-                            )
-                            ->searchable()
-                            ->required(),
+                            Forms\Components\TextInput::make('total_quantity')
+                                ->label('Total Quantity')
+                                ->numeric()
+                                ->required()
+                                ->minValue(1),
+                        ]),
 
-                        Forms\Components\TextInput::make('quantity')
-                            ->label('Quantity Received')
-                            ->numeric()
-                            ->required()
-                            ->minValue(1),
+                        // ROW 2: COUNTERS (EXCEL STYLE)
+                        Forms\Components\Fieldset::make('Counter Distribution')
+                            ->schema([
+                                Forms\Components\Grid::make(
+                                    Counter::where('tenant_id', Auth::user()->tenant_id)->count()
+                                )
+                                    ->schema(
+                                        Counter::where('tenant_id', Auth::user()->tenant_id)
+                                            ->orderBy('name')
+                                            ->get()
+                                            ->map(
+                                                fn($counter) =>
+                                                Forms\Components\TextInput::make("counters.{$counter->id}")
+                                                    ->label($counter->name)
+                                                    ->numeric()
+                                                    ->default(0)
+                                                    ->minValue(0)
+                                            )
+                                            ->toArray()
+                                    ),
+                            ]),
 
+                        // ROW 3: Date + Notes
+                        Forms\Components\Grid::make(2)->schema([
+                            Forms\Components\DatePicker::make('movement_date')
+                                ->label('Date')
+                                ->default(now())
+                                ->required(),
+
+                            Forms\Components\Textarea::make('notes')
+                                ->rows(2),
+                        ]),
+
+                        // HIDDEN
                         Forms\Components\Hidden::make('movement_type')
                             ->default(StockMovementType::RESTOCK),
 
-                        Forms\Components\DatePicker::make('movement_date')
-                            ->label('Date')
-                            ->default(now())
-                            ->required(),
-
-                        Forms\Components\Textarea::make('notes')
-                            ->label('Notes')
-                            ->rows(2)
-                            ->nullable(),
-
                         Forms\Components\Hidden::make('tenant_id')
-                            ->default(fn() => Auth::user()->tenant_id),
+                            ->default(Auth::user()->tenant_id),
 
                         Forms\Components\Hidden::make('created_by')
-                            ->default(fn() => Auth::id()),
+                            ->default(Auth::id()),
                     ])
-                    ->columns(2),
             ]);
     }
 
     public static function table(Table $table): Table
     {
         return $table
+            ->striped()
+            ->paginated([25, 50, 100])
+            ->defaultPaginationPageOption(25)
             ->headerActions([
                 // DOWNLOAD TEMPLATE
                 Action::make('downloadTemplate')
@@ -152,44 +168,85 @@ class StocksResource extends Resource
             ])
             ->modifyQueryUsing(
                 fn($query) =>
-                $query->where('movement_type', StockMovementType::RESTOCK)->where('tenant_id', auth()->user()->tenant_id)
+                $query
+                    ->selectRaw("
+            created_at,
+            CONCAT(item_id, '-', movement_date) AS id,
+            item_id,
+            movement_date,
+            SUM(quantity) AS total_quantity
+        ")
+                    ->where('tenant_id', auth()->user()->tenant_id)
+                    ->where('movement_type', StockMovementType::RESTOCK)
+                    ->groupBy('item_id', 'movement_date', 'created_at')
             )
 
             ->columns([
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label('TimeStamp')
-                    ->dateTime()
-                    ->sortable(),
+                    ->label('Time')
+                    ->dateTime('d M Y H:i')
+                    ->sortable()
+                    ->toggleable()
+                    ->color('gray'),
 
-                Tables\Columns\TextColumn::make('counter.name')
-                    ->label('Counter')
-                    ->sortable(),
+                /* PRODUCT */
                 Tables\Columns\TextColumn::make('item.name')
                     ->label('Product')
-                    ->sortable()
-                    ->searchable(),
+                    ->searchable()
+                    ->weight('bold'),
 
-                Tables\Columns\BadgeColumn::make('quantity')
-                    ->label('Qty (Counter / Total)')
-                    ->state(function ($record) {
+                Tables\Columns\TextColumn::make('item.code')
+                    ->label('SKU')
+                    ->color('gray')
+                    ->toggleable(),
 
-                        $grandTotal = \App\Models\StockMovement::query()
-                            ->where('tenant_id', $record->tenant_id)
-                            ->where('movement_type', \App\Constants\StockMovementType::RESTOCK)
-                            ->whereDate('movement_date', $record->movement_date)
-                            ->where('item_id', $record->item_id)
-                            ->sum('quantity');
+                /* TOTAL QTY */
+                Tables\Columns\TextColumn::make('total_quantity')
+                    ->label('Total')
+                    ->badge()
+                    ->color('success')
+                    ->alignCenter(),
 
-                        return "{$record->quantity} / {$grandTotal}";
-                    })
-                    ->colors([
-                        'success' => fn($state) => true,
-                    ])
-                    ->formatStateUsing(fn($state) => "{$state}"),
+                ...Counter::where('tenant_id', auth()->user()->tenant_id)
+                    ->get()
+                    ->map(
+                        fn($counter) =>
+                        Tables\Columns\TextColumn::make("counter_{$counter->id}")
+                            ->label($counter->name)
+                            ->state(
+                                fn($record) =>
+                                StockMovement::where('item_id', $record->item_id)
+                                    ->where('counter_id', $counter->id)
+                                    ->whereDate('movement_date', $record->movement_date)
+                                    ->sum('quantity')
+                            )->formatStateUsing(fn($state) => $state ?: '–')
+                            ->color(fn($state) => $state > 0 ? 'primary' : 'gray')
+                    ),
+                Tables\Columns\TextColumn::make('item.cost_price')
+                    ->label('Buy Price')
+                    ->alignEnd()
+                    ->formatStateUsing(
+                        fn($state) =>
+                        'KES ' . number_format($state, 0)
+                    )
+                    ->color('gray'),
+                Tables\Columns\TextColumn::make('total_cost')
+                    ->label('Total Cost')
+                    ->alignEnd()
+                    ->state(
+                        fn($record) =>
+                        $record->item->cost_price * $record->total_quantity
+                    )
+                    ->formatStateUsing(
+                        fn($state) =>
+                        'KES ' . number_format($state, 0)
+                    )
+                    ->weight('bold')
+                    ->color('primary')
 
-                Tables\Columns\TextColumn::make('creator.name')
-                    ->label('Recorded By')
-                    ->sortable(),
+
+
+
             ])
 
             ->defaultSort('movement_date', 'desc')

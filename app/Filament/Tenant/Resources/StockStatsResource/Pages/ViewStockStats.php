@@ -14,8 +14,5 @@ class ViewStockStats extends ListRecords
         return StockStatsResource::getWidgets();
     }
 
-    // protected function getTitle(): string
-    // {
-    //     return 'Stock Analytics';
-    // }
+
 }
