@@ -167,7 +167,6 @@ class ControllerResource extends Resource
                 fn($query) =>
                 $query
                     ->selectRaw("
-                        created_at,
                         CONCAT(item_id, '-', movement_date) AS id,
                         item_id,
                         movement_date,
@@ -175,7 +174,7 @@ class ControllerResource extends Resource
                     ")
                     ->where('tenant_id', auth()->user()->tenant_id)
                     ->where('movement_type', StockMovementType::CLOSING)
-                    ->groupBy('item_id', 'movement_date', 'created_at')
+                    ->groupBy('item_id', 'movement_date')
             )
 
             /* =========================
@@ -183,9 +182,9 @@ class ControllerResource extends Resource
          * ========================= */
             ->columns([
 
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label('Time')
-                    ->dateTime('d M Y H:i')
+                Tables\Columns\TextColumn::make('movement_date')
+                    ->label('Date')
+                    ->dateTime('d M Y')
                     ->sortable()
                     ->color('gray'),
 
@@ -226,16 +225,26 @@ class ControllerResource extends Resource
                         Tables\Columns\TextColumn::make("counter_{$counter->id}")
                             ->label($counter->name)
                             ->alignCenter()
-                            ->state(
-                                fn($record) =>
-                                StockMovement::where('item_id', $record->item_id)
+                            ->state(function ($record) use ($counter) {
+                                return StockMovement::where('item_id', $record->item_id)
                                     ->where('counter_id', $counter->id)
                                     ->whereDate('movement_date', $record->movement_date)
-                                    ->sum('quantity')
-                            )
-                            ->formatStateUsing(fn($state) => $state ?: '–')
-                            ->color(fn($state) => $state > 0 ? 'primary' : 'gray')
-                    ),
+                                    ->selectRaw("
+                        SUM(
+                            CASE
+                                WHEN movement_type = 'restock' THEN quantity
+                                WHEN movement_type = 'closing' THEN quantity
+                                WHEN movement_type = 'sale' THEN -quantity
+                                ELSE 0
+                            END
+                        ) as stock
+                    ")
+                                    ->value('stock');
+                            })
+                            ->formatStateUsing(fn($state) => $state > 0 ? $state : '–')
+                            ->color(fn($state) => $state > 0 ? 'success' : 'gray')
+                    )
+
             ])
 
             ->defaultSort('movement_date', 'desc')

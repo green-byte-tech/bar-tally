@@ -6,16 +6,16 @@ use Filament\Pages\Dashboard as BaseDashboard;
 use Filament\Panel;
 use App\Filament\Tenant\Widgets\StockValueOverviewWidget;
 use App\Filament\Tenant\Widgets\LowStockAlertWidget;
+
 class Dashboard extends BaseDashboard
 {
 
 
-public function panel(Panel $panel): Panel
-{
-    return $panel
-        // ...
-        ->sidebarFullyCollapsibleOnDesktop();
-}
+    public function panel(Panel $panel): Panel
+    {
+        return $panel
+            ->sidebarFullyCollapsibleOnDesktop();
+    }
     public static function canView(): bool
     {
         $user = auth()->user();
@@ -23,13 +23,12 @@ public function panel(Panel $panel): Panel
 
         return $user->isManager() || $user->isTenantAdmin() || $user->isAdmin();
     }
-public function getWidgets(): array
-{
-    return [
- StockValueOverviewWidget::class,
-//   LowStockAlertWidget::class,
-    ];
-}
+    public function getWidgets(): array
+    {
+        return [
+            StockValueOverviewWidget::class,
+        ];
+    }
 
     public function getTitle(): string
     {

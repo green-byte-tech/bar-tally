@@ -135,20 +135,33 @@
                     <td class="p-3 text-center">{{ $expected }}</td>
 
                     <td class="p-3 text-center font-bold">
-                        @if($variance > 0)
-                        <span class="px-2 py-1 rounded-full bg-green-200 text-green-700 dark:bg-green-900/40 dark:text-green-300">
+                        @php
+                        $baseClasses = 'inline-flex items-center justify-center min-w-[40px] px-2 py-1 rounded-full text-sm ring-1';
+                        @endphp
+
+                        @if ($variance > 0)
+                        <span class="{{ $baseClasses }}
+            bg-green-200 text-green-800 ring-green-400
+            dark:bg-green-900/40 dark:text-green-300 dark:ring-green-600">
                             +{{ $variance }}
                         </span>
-                        @elseif($variance < 0)
-                            <span class="px-2 py-1 rounded-full bg-red-200 text-red-700 dark:bg-red-900/40 dark:text-red-300">
+
+                        @elseif ($variance < 0)
+                            <span class="{{ $baseClasses }}
+            bg-red-200 text-red-800 ring-red-400
+            dark:bg-red-900/40 dark:text-red-300 dark:ring-red-600">
                             {{ $variance }}
                             </span>
+
                             @else
-                            <span class="px-2 py-1 rounded-full bg-gray-300 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                            <span class="{{ $baseClasses }}
+            bg-gray-200 text-gray-800 ring-gray-400
+            dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-600">
                                 0
                             </span>
                             @endif
                     </td>
+
 
                     <td class="p-3 text-center">{{ number_format($cost, 2) }}</td>
                     <td class="p-3 text-center">{{ number_format($selling, 2) }}</td>
