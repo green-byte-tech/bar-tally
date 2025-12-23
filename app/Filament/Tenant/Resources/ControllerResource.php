@@ -24,6 +24,8 @@ use App\Support\PhysicalCountExportHandler;
 use Filament\Tables\Actions\Action;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Session;
+use App\Services\Stock\PhysicalCountTemplateService;
+use App\Services\Stock\StockCountImportService;
 
 class ControllerResource extends Resource
 {
@@ -33,7 +35,7 @@ class ControllerResource extends Resource
 
     protected static ?string $navigationGroup = 'Controller';
 
-    protected static ?string $navigationLabel = 'Closing Count';
+    protected static ?string $navigationLabel = 'Controller Count';
 
     public static function canViewAny(): bool
     {
@@ -116,7 +118,24 @@ class ControllerResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->striped()
+            ->paginated([25, 50, 100])
+            ->defaultPaginationPageOption(25)
+
+            /* =========================
+         | HEADER ACTIONS
+         * ========================= */
             ->headerActions([
+
+                Action::make('downloadTemplate')
+                    ->label('Download Count Template')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->color('success')
+                    ->action(
+                        fn(PhysicalCountTemplateService $service) =>
+                        $service->downloadTemplate(auth()->user()->tenant_id)
+                    ),
+
                 Action::make('importPhysicalCount')
                     ->label('Import Physical Count')
                     ->icon('heroicon-o-arrow-up-tray')
@@ -128,109 +147,90 @@ class ControllerResource extends Resource
                             ->directory('imports/tmp')
                             ->preserveFilenames(),
                     ])
-                    ->action(function (array $data) {
+                    ->action(function (array $data, StockCountImportService $service) {
 
-                        // temp path (Filament upload)
-                        $tempPath = Storage::disk('local')->path($data['file']);
+                        $result = $service->preparePreview($data['file']);
 
-                        // permanent safe path
-                        $permanentFilename = uniqid('count_') . '.csv';
-                        $permanentRelative = 'imports/permanent/' . $permanentFilename;
-                        Storage::disk('local')->copy($data['file'], $permanentRelative);
+                        Session::put('stock-count-import-rows', $result['rows']);
+                        Session::put('stock-count-import-file', $result['file']);
 
-                        $absolutePath = Storage::disk('local')->path($permanentRelative);
-
-                        if (! file_exists($absolutePath)) {
-                            throw new \Exception("Permanent import file not found: {$absolutePath}");
-                        }
-
-                        // load rows
-                        $rows = \App\Support\PhysicalCountImportHandler::loadRows($absolutePath);
-
-                        Session::put('physical-count-rows', $rows);
-
-                        return redirect()->route('filament.tenant.pages.stock-count-import-preview');
+                        return redirect()->route(
+                            'filament.tenant.pages.stock-count-import-preview'
+                        );
                     }),
-                Action::make('downloadTemplate')
-                    ->label('Download Count Template')
-                    ->icon('heroicon-o-arrow-down-tray')
-                    ->action(function () {
-
-                        $tenantId = Auth::user()->tenant_id;
-
-                        // Fetch all items for this tenant
-                        $items = \App\Models\Item::where('tenant_id', $tenantId)
-                            ->orderBy('name')
-                            ->get(['name', 'code']);
-
-                        $headers = [
-                            'Content-Type'        => 'text/csv',
-                            'Content-Disposition' => 'attachment; filename="physical_count_template.csv"',
-                        ];
-
-                        return response()->streamDownload(function () use ($items) {
-
-                            $file = fopen('php://output', 'w');
-
-                            // CSV Header
-                            fputcsv($file, ['counter', 'sku', 'product', 'quantity', 'notes']);
-
-                            // Body: list all items
-                            foreach ($items as $item) {
-                                fputcsv($file, [
-                                    '',                // counter (user will fill)
-                                    $item->code ?? '', // SKU
-                                    $item->name,       // Product name
-                                    '',                // quantity (user will fill)
-                                    '',                // notes (optional)
-                                ]);
-                            }
-
-                            fclose($file);
-                        }, 'physical_count_template.csv', $headers);
-                    })
-
-
             ])
 
+            /* =========================
+         | QUERY (PIVOT SOURCE)
+         * ========================= */
             ->modifyQueryUsing(
                 fn($query) =>
-                $query->where('movement_type', StockMovementType::CLOSING)->where('tenant_id', auth()->user()->tenant_id)->where('movement_date', today())
+                $query
+                    ->selectRaw("
+                        created_at,
+                        CONCAT(item_id, '-', movement_date) AS id,
+                        item_id,
+                        movement_date,
+                        SUM(quantity) AS total_quantity
+                    ")
+                    ->where('tenant_id', auth()->user()->tenant_id)
+                    ->where('movement_type', StockMovementType::CLOSING)
+                    ->groupBy('item_id', 'movement_date', 'created_at')
             )
+
+            /* =========================
+         | COLUMNS (MATCH STOCK)
+         * ========================= */
             ->columns([
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Time')
-                    ->dateTime()
-                    ->sortable(),
-
-                Tables\Columns\TextColumn::make('counter.name')
-                    ->label('Counter')
-                    ->sortable(),
+                    ->dateTime('d M Y H:i')
+                    ->sortable()
+                    ->color('gray'),
 
                 Tables\Columns\TextColumn::make('item.name')
                     ->label('Product')
-                    ->sortable()
-                    ->searchable(),
+                    ->searchable()
+                    ->weight('bold'),
 
-                Tables\Columns\BadgeColumn::make('quantity')
-                    ->label('Closing Count')
-                    ->colors([
-                        'success' => fn($state) => $state >= 0,
-                    ]),
+                Tables\Columns\TextColumn::make('item.code')
+                    ->label('SKU')
+                    ->color('gray')
+                    ->toggleable(),
 
-                Tables\Columns\TextColumn::make('creator.name')
-                    ->label('Controller')
-                    ->sortable(),
+                Tables\Columns\TextColumn::make('total_quantity')
+                    ->label('Total')
+                    ->badge()
+                    ->color('success')
+                    ->alignCenter(),
 
-                Tables\Columns\TextColumn::make('notes')
-                    ->limit(30)
-                    ->placeholder('-'),
+                // COUNTER COLUMNS (DYNAMIC – SAME AS STOCK)
+                ...Counter::where('tenant_id', auth()->user()->tenant_id)
+                    ->orderBy('name')
+                    ->get()
+                    ->map(
+                        fn($counter) =>
+                        Tables\Columns\TextColumn::make("counter_{$counter->id}")
+                            ->label($counter->name)
+                            ->alignCenter()
+                            ->state(
+                                fn($record) =>
+                                StockMovement::where('item_id', $record->item_id)
+                                    ->where('counter_id', $counter->id)
+                                    ->whereDate('movement_date', $record->movement_date)
+                                    ->sum('quantity')
+                            )
+                            ->formatStateUsing(fn($state) => $state ?: '–')
+                            ->color(fn($state) => $state > 0 ? 'primary' : 'gray')
+                    ),
             ])
-            ->defaultSort('created_at', 'desc')
+
+            ->defaultSort('movement_date', 'desc')
             ->actions([])
             ->bulkActions([]);
     }
+
 
     public static function getRelations(): array
     {

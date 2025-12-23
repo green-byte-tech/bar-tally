@@ -17,14 +17,18 @@ class StockCountImportPreview extends Page
 
     public $rows = [];
 
+
     public function mount()
     {
-        $this->rows = Session::get('physical-count-rows', []);
+        $this->rows = Session::get('stock-count-import-rows', []);
 
         if (empty($this->rows)) {
-        return redirect()->route('filament.tenant.resources.controllers.index');
+            return redirect()->route(
+                'filament.tenant.resources.controllers.index'
+            );
         }
     }
+
 
     public function import()
     {

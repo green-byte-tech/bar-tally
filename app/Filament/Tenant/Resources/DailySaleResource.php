@@ -32,7 +32,7 @@ class DailySaleResource extends Resource
     protected static ?string $model = StockMovement::class;
     protected static ?string $navigationIcon = 'heroicon-c-document-currency-dollar';
     protected static ?string $navigationGroup = 'Cashier';
-    protected static ?string $navigationLabel = 'Record Sales';
+    protected static ?string $navigationLabel = 'Record POS Sales';
 
     public static function canViewAny(): bool
     {

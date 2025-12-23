@@ -8,9 +8,36 @@ use App\Models\StockMovement;
 use App\Models\DailySession;
 use App\Constants\StockMovementType;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
+use App\Support\PhysicalCountImportHandler;
 
 class StockCountImportService
 {
+     public function preparePreview(string $uploadedPath): array
+    {
+        // Move file to permanent location
+        $extension = pathinfo($uploadedPath, PATHINFO_EXTENSION);
+
+        $permanentFile = 'imports/permanent/' . Str::uuid() . '.' . $extension;
+
+        Storage::disk('local')->copy($uploadedPath, $permanentFile);
+
+        $absolutePath = Storage::disk('local')->path($permanentFile);
+
+        if (!file_exists($absolutePath)) {
+            throw new \RuntimeException("Import file not found: {$absolutePath}");
+        }
+
+        // Parse rows (CSV / XLSX safe)
+        $rows = PhysicalCountImportHandler::loadRows($absolutePath);
+
+        return [
+            'rows' => $rows,
+            'file' => $permanentFile,
+        ];
+    }
+
     public function commit(
         array $rows,
         int $tenantId,
