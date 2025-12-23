@@ -5,6 +5,7 @@ namespace App\Filament\Tenant\Pages;
 use Filament\Pages\Dashboard as BaseDashboard;
 use Filament\Panel;
 use App\Filament\Tenant\Widgets\StockValueOverviewWidget;
+use App\Filament\Tenant\Widgets\LowStockAlertWidget;
 class Dashboard extends BaseDashboard
 {
 
@@ -26,6 +27,7 @@ public function getWidgets(): array
 {
     return [
  StockValueOverviewWidget::class,
+  LowStockAlertWidget::class,
     ];
 }
 
