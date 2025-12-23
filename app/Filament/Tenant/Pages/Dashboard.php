@@ -4,6 +4,7 @@ namespace App\Filament\Tenant\Pages;
 
 use Filament\Pages\Dashboard as BaseDashboard;
 use Filament\Panel;
+use App\Filament\Tenant\Widgets\StockValueOverviewWidget;
 class Dashboard extends BaseDashboard
 {
 
@@ -24,7 +25,7 @@ public function panel(Panel $panel): Panel
 public function getWidgets(): array
 {
     return [
-
+ StockValueOverviewWidget::class,
     ];
 }
 
