@@ -50,65 +50,6 @@ class StockReportTable extends Component
         return $query->orderBy('sm.item_id')->paginate(20);
     }
 
-    public function getVariationChartData()
-    {
-         $chartData =   DB::table('stock_movements as sm')
-            ->join('items as i', 'i.id', '=', 'sm.item_id')
-            ->select(
-                'sm.*',
-                'i.name as item_name',
-                'i.selling_price',
-                'i.cost_price'
-            )
-            ->where('sm.movement_date', $this->date)
-            ->orderBy('sm.item_id')
-            ->get();
-
-        $rows = $chartData->groupBy('item_id');
-
-        $data = [];
-
-        foreach ($rows as $itemId => $movements) {
-
-            $item     = $movements->first();
-            $opening  = $movements->where('movement_type', 'opening_stock')->sum('quantity');
-            $restock  = $movements->where('movement_type', 'restock')->sum('quantity');
-            $sold     = $movements->where('movement_type', 'sale')->sum('quantity');
-            $closingQ = $movements->where('movement_type', 'closing_stock')->sum('quantity');
-
-            $expectedQ = $opening + $restock - $sold;
-            $varianceQ = $expectedQ - $closingQ;
-
-            $data[] = [
-                'label'     => $item->item_name,
-                'expected'  => $expectedQ,
-                'closing'   => $closingQ,
-                'variance'  => $varianceQ,
-            ];
-        }
-
-        // 1. PRIORITIZE Negative Variance (missing stock)
-        usort($data, function ($a, $b) {
-            if ($a['variance'] < 0 && $b['variance'] >= 0) return -1;
-            if ($a['variance'] >= 0 && $b['variance'] < 0) return 1;
-
-            // Next, sort by magnitude
-            return abs($b['variance']) <=> abs($a['variance']);
-        });
-
-        // 2. LIMIT to Top 20 Only
-        $top = array_slice($data, 0, 20);
-
-        return [
-            'labels'   => array_column($top, 'label'),
-            'expected' => array_column($top, 'expected'),
-            'closing'  => array_column($top, 'closing'),
-            'variance' => array_column($top, 'variance'),
-        ];
-    }
-
-
-
 
     // Unpaginated version for CSV
     public function allRows()
@@ -227,8 +168,7 @@ class StockReportTable extends Component
     {
         return view('livewire.stock-report-table', [
             'rows' => $this->rows, // paginated
-            'items' => \App\Models\Item::orderBy('name')->get(),
-            'chartData' => $this->getVariationChartData(),
+            'items' => \App\Models\Item::orderBy('name')->get()
         ]);
     }
 }

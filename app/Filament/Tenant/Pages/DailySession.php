@@ -78,24 +78,31 @@ class DailySession extends Page
                 ->icon('heroicon-s-stop'),
         ];
     }
-    public function closePreviousDay()
-    {
-        if (!$this->unfinishedDay) return;
-
-        $this->unfinishedDay->update([
-            'is_open' => false,
-            'closed_by' => Auth::id(),
-            'closing_time' => now(),
-        ]);
-
+public function closeDay()
+{
+    if (!$this->session || !$this->session->is_open) {
         Notification::make()
-            ->title("Previous Day Closed")
-            ->body("Successfully closed session for {$this->unfinishedDay->date->format('d M Y')}.")
-            ->success()
+            ->title('No Open Session')
+            ->body('There is no open session for today.')
+            ->danger()
             ->send();
-
-        $this->mount(); // Reload state
+        return;
     }
+
+    $this->session->update([
+        'is_open'      => false,
+        'closed_by'    => Auth::id(),
+        'closing_time' => now(),
+    ]);
+
+    Notification::make()
+        ->title('Day Closed Successfully')
+        ->body("Session for {$this->session->date->format('d M Y')} has been closed.")
+        ->success()
+        ->send();
+
+    $this->mount(); // reload state
+}
 
     public function openDay()
     {
@@ -176,32 +183,6 @@ class DailySession extends Page
             ->success()
             ->send();
     }
-
-    // public function moveOpeningStock()
-    // {
-    //     if (!$this->session) return;
-    //     $items = StockMovement::where('tenant_id', Auth::user()->tenant_id)
-    //         ->where('movement_type', 'closing_stock')
-    //         ->get();
-    //     if (!count($items)) {
-    //         session()->flash('error', 'No closing stock found from previous day to move!');
-    //         return;
-    //     }
-    //     foreach ($items as $item) {
-    //         StockMovement::create([
-    //             'tenant_id'     => Auth::user()->tenant_id,
-    //             'item_id'       => $item->item_id,
-    //             'counter_id'    => $item->counter_id,
-    //             'quantity'      => $item->quantity,
-    //             'movement_type' => StockMovementType::OPENING,
-    //             'movement_date' => today(),
-    //             'session_id'    => $this->session->id,
-    //             'created_by'    => Auth::id(),
-    //         ]);
-    //     }
-
-    //     session()->flash('success', 'Opening stock moved successfully!');
-    // }
 
     public function moveOpeningStock()
     {
