@@ -3,47 +3,40 @@
 namespace App\Filament\Tenant\Widgets;
 
 use Filament\Widgets\ChartWidget;
-use App\Models\StockMovement;
+use App\Models\Item;
+use Illuminate\Support\Facades\DB;
 
 class StockByProductChart extends ChartWidget
 {
     protected static ?string $heading = 'Current Stock by Product';
     protected static ?int $sort = 3;
 
-    protected function getFilters(): array
-    {
-        return [
-            'all' => 'All Time',
-            'month' => 'This Month',
-        ];
-    }
-
     protected function getData(): array
     {
-        [$from, $to] = $this->filter === 'month'
-            ? [now()->startOfMonth(), now()->endOfMonth()]
-            : [null, null];
+        $tenantId = auth()->user()->tenant_id;
 
-        $query = StockMovement::query()
-            ->join('items', 'items.id', '=', 'stock_movements.item_id')
+        $rows = Item::query()
+            ->where('items.tenant_id', $tenantId)
+            ->leftJoin('stock_movements', function ($join) {
+                $join->on('items.id', '=', 'stock_movements.item_id');
+            })
             ->selectRaw('
                 items.name as product,
-                SUM(
-                    CASE
-                        WHEN movement_type = "restock" THEN quantity
-                        WHEN movement_type = "sale" THEN -quantity
-                        ELSE 0
-                    END
+                COALESCE(
+                    SUM(
+                        CASE
+                            WHEN stock_movements.movement_type = "restock"
+                                THEN stock_movements.quantity
+                            WHEN stock_movements.movement_type = "sale"
+                                THEN -stock_movements.quantity
+                            ELSE 0
+                        END
+                    ), 0
                 ) as stock
             ')
             ->groupBy('items.id', 'items.name')
-            ->orderByDesc('stock');
-
-        if ($from && $to) {
-            $query->whereBetween('movement_date', [$from, $to]);
-        }
-
-        $rows = $query->get();
+            ->orderBy('items.name')
+            ->get();
 
         return [
             'datasets' => [
