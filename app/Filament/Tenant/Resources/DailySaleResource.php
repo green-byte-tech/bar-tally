@@ -17,6 +17,7 @@ use App\Constants\StockMovementType;
 use Filament\Tables\Actions\Action;
 use Illuminate\Support\Facades\Session;
 use App\Services\Sale\SalesTemplateService;
+use App\Services\DailySessionService;
 
 
 class DailySaleResource extends Resource
@@ -129,6 +130,10 @@ class DailySaleResource extends Resource
 
     public static function table(Table $table): Table
     {
+        $user = Auth::user();
+        $tenantId = $user->tenant_id;
+        $sessionService = app(DailySessionService::class);
+
         return $table
             ->striped()
             ->paginated([25, 50, 100])
@@ -138,7 +143,9 @@ class DailySaleResource extends Resource
                 Action::make('downloadTemplate')
                     ->label('Download Sales Template')
                     ->icon('heroicon-o-arrow-down-tray')
-                    ->color('success')
+                    ->color('default')
+                    ->outlined()
+                    ->disabled(fn() => !$sessionService->hasOpenSession($tenantId))
                     ->action(
                         fn(SalesTemplateService $service) =>
                         $service->downloadTemplate(auth()->user()->tenant_id)
@@ -147,6 +154,9 @@ class DailySaleResource extends Resource
                 Action::make('importSales')
                     ->label('Import Sales')
                     ->icon('heroicon-o-arrow-up-tray')
+                     ->color('warning')
+                    ->outlined(false)
+                    ->disabled(fn() => !$sessionService->hasOpenSession($tenantId))
                     ->form([
                         Forms\Components\FileUpload::make('file')
                             ->required()

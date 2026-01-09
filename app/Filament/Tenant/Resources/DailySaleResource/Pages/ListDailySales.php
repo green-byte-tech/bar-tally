@@ -5,7 +5,8 @@ namespace App\Filament\Tenant\Resources\DailySaleResource\Pages;
 use App\Filament\Tenant\Resources\DailySaleResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
-use Filament\Pages\Actions\Action;
+use App\Services\DailySessionService;
+use Illuminate\Support\Facades\Auth;
 
 class ListDailySales extends ListRecords
 {
@@ -15,8 +16,15 @@ class ListDailySales extends ListRecords
 
     protected function getHeaderActions(): array
     {
+         $user = Auth::user();
+        $tenantId = $user->tenant_id;
+        $sessionService = app(DailySessionService::class);
         return [
-            Actions\CreateAction::make()->label('Add Sale Entry')->slideOver(),
+            Actions\CreateAction::make()
+                ->label('Add Sale Entry')
+                ->slideOver()
+                ->outlined()
+                ->disabled(fn() => !$sessionService->hasOpenSession($tenantId)),
 
         ];
     }

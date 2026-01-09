@@ -3,29 +3,22 @@
 namespace App\Filament\Tenant\Resources;
 
 use App\Filament\Tenant\Resources\StocksResource\Pages;
-use App\Filament\Tenant\Resources\StocksResource\RelationManagers;
 use App\Models\StockMovement;
-use App\Models\Stocks;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use App\Models\Item;
 use Illuminate\Support\Facades\Auth;
 use App\Constants\StockMovementType;
 use App\Models\Counter;
 use Filament\Tables\Actions\Action;
-use App\Support\SalesImportHandler;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Session;
 use App\Services\Stock\StockTemplateService;
 use App\Services\Stock\StockImportService;
-use Filament\Forms\Components\Grid;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Hidden;
+use App\Services\DailySessionService;
+use Illuminate\Support\Facades\Session;
+
 
 class StocksResource extends Resource
 {
@@ -130,6 +123,10 @@ class StocksResource extends Resource
 
     public static function table(Table $table): Table
     {
+        $user = Auth::user();
+        $tenantId = $user->tenant_id;
+        $sessionService = app(DailySessionService::class);
+
         return $table
             ->striped()
             ->paginated([25, 50, 100])
@@ -139,15 +136,20 @@ class StocksResource extends Resource
                 Action::make('downloadTemplate')
                     ->label('Download Template')
                     ->icon('heroicon-o-arrow-down-tray')
+                    ->color('default')
+                    ->outlined()
+                    ->disabled(fn() => !$sessionService->hasOpenSession($tenantId))
                     ->action(function (StockTemplateService $service) {
                         return $service->downloadTemplate(auth()->user()->tenant_id);
-                    })
-                    ->color('success'),
+                    }),
 
                 // IMPORT STOCK
                 Action::make('importStock')
                     ->label('Import Stock')
                     ->icon('heroicon-o-arrow-up-tray')
+                    ->color('warning')
+                    ->outlined(false)
+                    ->disabled(fn() => !$sessionService->hasOpenSession($tenantId))
                     ->form([
                         Forms\Components\FileUpload::make('file')
                             ->label('Upload CSV or Excel')
