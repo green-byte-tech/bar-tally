@@ -88,24 +88,24 @@ class StockOverviewWidget extends StatsOverviewWidget
                 ->descriptionIcon('heroicon-m-arrow-down-tray')
                 ->color('success'),
 
-            Stat::make(
-                'Total Movements',
-                StockMovement::where('tenant_id', $tenantId)->count()
-            )
-                ->description('All stock activities 🔄')
-                ->descriptionIcon('heroicon-m-arrows-right-left')
-                ->color('info'),
+            // Stat::make(
+            //     'Total Movements',
+            //     StockMovement::where('tenant_id', $tenantId)->count()
+            // )
+            //     ->description('All stock activities 🔄')
+            //     ->descriptionIcon('heroicon-m-arrows-right-left')
+            //     ->color('info'),
 
-            Stat::make(
-                'Counters Active Today',
-                StockMovement::where('tenant_id', $tenantId)
-                    ->whereDate('movement_date', today())
-                    ->distinct('counter_id')
-                    ->count('counter_id')
-            )
-                ->description('Counters with stock updates 🏪')
-                ->descriptionIcon('heroicon-m-building-storefront')
-                ->color('warning'),
+            // Stat::make(
+            //     'Counters Active Today',
+            //     StockMovement::where('tenant_id', $tenantId)
+            //         ->whereDate('movement_date', today())
+            //         ->distinct('counter_id')
+            //         ->count('counter_id')
+            // )
+            //     ->description('Counters with stock updates 🏪')
+            //     ->descriptionIcon('heroicon-m-building-storefront')
+            //     ->color('warning'),
 
             /* ========================
          * SALES & PROFIT
@@ -135,22 +135,22 @@ class StockOverviewWidget extends StatsOverviewWidget
                 ->descriptionIcon('heroicon-m-archive-box')
                 ->color($netStock > 0 ? 'success' : 'danger'),
 
-            Stat::make('Total Counter Stock', $totalCounterStock)
-                ->description('Stock across all counters 🏪')
-                ->descriptionIcon('heroicon-m-building-storefront')
-                ->color('info'),
+            // Stat::make('Total Counter Stock', $totalCounterStock)
+            //     ->description('Stock across all counters 🏪')
+            //     ->descriptionIcon('heroicon-m-building-storefront')
+            //     ->color('info'),
 
-            Stat::make(
-                'Top Stocked Counter',
-                optional($topCounter?->counter)->name ?? '—'
-            )
-                ->description(
-                    $topCounter
-                        ? "{$topCounter->stock} items available 📊"
-                        : 'No stock data'
-                )
-                ->descriptionIcon('heroicon-m-trophy')
-                ->color('success'),
+            // Stat::make(
+            //     'Top Stocked Counter',
+            //     optional($topCounter?->counter)->name ?? '—'
+            // )
+            //     ->description(
+            //         $topCounter
+            //             ? "{$topCounter->stock} items available 📊"
+            //             : 'No stock data'
+            //     )
+            //     ->descriptionIcon('heroicon-m-trophy')
+            //     ->color('success'),
         ];
     }
 }

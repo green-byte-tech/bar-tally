@@ -32,45 +32,11 @@ class StockStatsResource extends Resource
             ->where('tenant_id', auth()->user()->tenant_id);
     }
 
-
     public static function table(Table $table): Table
     {
         return $table
-            ->heading('Recent Stock Movements')
-            ->columns([
-                Tables\Columns\TextColumn::make('movement_date')
-                    ->label('Date')
-                    ->dateTime()
-                    ->sortable(),
-
-                Tables\Columns\TextColumn::make('item.name')
-                    ->label('Product')
-                    ->sortable()
-                    ->searchable(),
-
-                Tables\Columns\TextColumn::make('counter.name')
-                    ->label('Counter')
-                    ->placeholder('Warehouse'),
-
-                Tables\Columns\BadgeColumn::make('movement_type')
-                    ->label('Type')
-                    ->colors([
-                        'success' => 'restock',
-                        'danger'  => 'sale',
-                    ]),
-
-                Tables\Columns\BadgeColumn::make('quantity')
-                    ->label('Qty')
-                    ->color('success')
-                    ->formatStateUsing(fn($state) => "+{$state}"),
-
-                Tables\Columns\TextColumn::make('creator.name')
-                    ->label('Recorded By')
-                    ->sortable(),
-            ])
-            ->defaultSort('movement_date', 'desc')
-            ->paginated([10, 25, 50])
-            ->defaultPaginationPageOption(10);
+            ->paginated(false)
+            ->columns([]);
     }
 
 
