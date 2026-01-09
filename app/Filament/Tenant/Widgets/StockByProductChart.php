@@ -36,6 +36,7 @@ class StockByProductChart extends ChartWidget
             ')
             ->groupBy('items.id', 'items.name')
             ->orderBy('items.name')
+            ->limit(value: 15)
             ->get();
 
         return [

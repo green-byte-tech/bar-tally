@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Tenant\Widgets\StockOverviewWidget;
 use App\Filament\Tenant\Widgets\ProfitByProductChart;
 use App\Filament\Tenant\Widgets\StockByProductChart;
-
+use App\Filament\Tenant\Widgets\LowStockByProductChart;
 
 
 class StockStatsResource extends Resource
@@ -44,6 +44,7 @@ class StockStatsResource extends Resource
             StockOverviewWidget::class,
             ProfitByProductChart::class,
             StockByProductChart::class,
+            LowStockByProductChart::class,
 
         ];
     }
