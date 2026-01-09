@@ -9,6 +9,8 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use App\Filament\Tenant\Widgets\StockOverviewWidget;
 use App\Filament\Tenant\Widgets\ProfitByProductChart;
+use App\Filament\Tenant\Widgets\StockByProductChart;
+
 
 
 class StockStatsResource extends Resource
@@ -41,6 +43,8 @@ class StockStatsResource extends Resource
         return [
             StockOverviewWidget::class,
             ProfitByProductChart::class,
+            StockByProductChart::class,
+
         ];
     }
 
