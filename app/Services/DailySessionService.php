@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use App\Models\StockMovement;
 use App\Constants\StockMovementType;
+use Illuminate\Database\QueryException;
 
 class DailySessionService
 {
@@ -28,24 +29,32 @@ class DailySessionService
      */
     public function open(int $tenantId): DailySession
     {
-        return DB::transaction(function () use ($tenantId) {
+        try {
+            return DB::transaction(function () use ($tenantId) {
 
-            if ($existing = $this->current($tenantId)) {
-                return $existing;
-            }
+                if ($this->current($tenantId)) {
+                    throw ValidationException::withMessages([
+                        'day' => 'The day is already open.',
+                    ]);
+                }
 
-            $dailySession = DailySession::create([
-                'tenant_id'    => $tenantId,
-                'date'         => today(),
-                'opened_by'    => Auth::id(),
-                'opening_time' => now(),
-                'is_open'      => true,
+                $dailySession = DailySession::create([
+                    'tenant_id'    => $tenantId,
+                    'date'         => today(),
+                    'opened_by'    => Auth::id(),
+                    'opening_time' => now(),
+                    'is_open'      => true,
+                ]);
+
+                $this->moveOpeningStock($tenantId);
+
+                return $dailySession;
+            });
+        } catch (QueryException $e) {
+            throw ValidationException::withMessages([
+                'day' => 'The day is already open (duplicate attempt).',
             ]);
-
-            $this->moveOpeningStock($tenantId);
-            return $dailySession;
-
-        });
+        }
     }
 
     /**

@@ -40,20 +40,20 @@ class ListControllers extends ListRecords
                 ->visible(fn () => ! $sessionService->hasOpenSession($tenantId))
                 ->action(function () use ($sessionService, $tenantId) {
                     try {
-                        $sessionService->open($tenantId);
+            $sessionService->open($tenantId);
 
-                        Notification::make()
-                            ->title('Day opened successfully')
-                            ->success()
-                            ->send();
+            Notification::make()
+                ->title('Day opened successfully')
+                ->success()
+                ->send();
 
-                    } catch (ValidationException $e) {
-                        Notification::make()
-                            ->title('Cannot open day')
-                            ->body($e->getMessage())
-                            ->danger()
-                            ->send();
-                    }
+        } catch (ValidationException $e) {
+            Notification::make()
+                ->title('Cannot open day')
+                ->body($e->errors()['day'][0] ?? $e->getMessage())
+                ->danger()
+                ->send();
+        }
                 })
                 ->after(fn () => $this->dispatch('$refresh')),
 
