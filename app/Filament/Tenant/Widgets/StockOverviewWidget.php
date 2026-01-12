@@ -57,7 +57,7 @@ class StockOverviewWidget extends StatsOverviewWidget
         ];
         foreach ($analytics->salesValueByCounter() as $counter) {
             $stats[] = Stat::make(
-                "{$counter['counter']} Sales",
+                "Counter: {$counter['counter']} Sales",
                 'KES ' . number_format($counter['value'], 0)
             )
                 ->description('Sold value 💰')
@@ -67,7 +67,7 @@ class StockOverviewWidget extends StatsOverviewWidget
 
         foreach ($analytics->stockValueByCounter() as $counter) {
             $stats[] = Stat::make(
-                "{$counter['counter']} Stock",
+                "Counter: {$counter['counter']} Stock",
                 'KES ' . number_format($counter['value'], 0)
             )
                 ->description('Remaining stock value 📦')
