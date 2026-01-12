@@ -27,15 +27,15 @@ class StockValueOverviewWidget extends StatsOverviewWidget
          * ========================= */
 
         $stockInValue = $restocks->sum(
-            fn ($m) => $m->quantity * ($m->item->cost_price ?? 0)
+            fn($m) => $m->quantity * ($m->item->cost_price ?? 0)
         );
 
         $salesValue = $sales->sum(
-            fn ($m) => $m->quantity * ($m->item->selling_price ?? 0)
+            fn($m) => $m->quantity * ($m->item->selling_price ?? 0)
         );
 
         $costOfSales = $sales->sum(
-            fn ($m) => $m->quantity * ($m->item->cost_price ?? 0)
+            fn($m) => $m->quantity * ($m->item->cost_price ?? 0)
         );
 
         $currentStockValue = max($stockInValue - $costOfSales, 0);
@@ -99,8 +99,9 @@ class StockValueOverviewWidget extends StatsOverviewWidget
                 ->color('success'),
 
             Stat::make('Variance Value Today', 'KES ' . number_format($varianceToday, 2))
-                ->description('Stock variance cost')
-                ->color($varianceToday >= 0 ? 'success' : 'danger'),
+                ->description('Stock variance (should be zero)')
+                ->color($varianceToday === 0.0 ? 'success' : 'danger'),
+
 
             Stat::make('Current Stock Value', 'KES ' . number_format($currentStockValue, 0))
                 ->description('Unsold inventory 📦')
