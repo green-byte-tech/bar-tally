@@ -136,7 +136,8 @@ class StocksResource extends Resource
                 Action::make('downloadTemplate')
                     ->label('Download Template')
                     ->icon('heroicon-o-arrow-down-tray')
-                    ->color('default')
+                     ->color('info')
+                    ->outlined()
                     ->outlined()
                     // ->disabled(fn() => !$sessionService->hasOpenSession($tenantId))
                     ->action(function (StockTemplateService $service) {

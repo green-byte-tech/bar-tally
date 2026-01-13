@@ -109,7 +109,8 @@ class ItemResource extends Resource
                 Action::make('downloadTemplate')
                     ->label('Download Template')
                     ->icon('heroicon-o-arrow-down-tray')
-                    ->color('success')
+                    ->color('info')
+                    ->outlined()
                     ->action(fn() => app(ItemTemplateService::class)->downloadTemplate()),
 
                 Action::make('importItems')

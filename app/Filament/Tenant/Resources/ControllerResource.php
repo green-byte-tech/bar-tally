@@ -127,7 +127,8 @@ class ControllerResource extends Resource
                 Action::make('downloadTemplate')
                     ->label('Download Count Template')
                     ->icon('heroicon-o-arrow-down-tray')
-                    ->color('default')
+                    ->color('info')
+                    ->outlined()
                     ->outlined()
                     ->disabled(fn() => !$sessionService->hasOpenSession($tenantId))
                     ->action(

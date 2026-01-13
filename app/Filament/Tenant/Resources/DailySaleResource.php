@@ -143,7 +143,7 @@ class DailySaleResource extends Resource
                 Action::make('downloadTemplate')
                     ->label('Download Sales Template')
                     ->icon('heroicon-o-arrow-down-tray')
-                    ->color('default')
+                    ->color('info')
                     ->outlined()
                     ->disabled(fn() => !$sessionService->hasOpenSession($tenantId))
                     ->action(
