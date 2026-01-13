@@ -98,7 +98,7 @@
 
                 $cost = floatval($item->cost_price ?? 0);
                 $selling = floatval($item->selling_price ?? 0);
-                $finalprofit = ($cost* $sold)- ($selling * $sold);
+                $finalprofit = ($cost* $sold) - ($selling * $sold);
                 $profit = $sold * ($selling - $cost);
 
                 // Accumulate totals
@@ -108,7 +108,7 @@
                 $totals['closing'] += $closing;
                 $totals['expected'] += $expected;
                 $totals['variance'] += $variance;
-                $totals['profit'] += $finalprofit;
+                $totals['profit'] += $profit;
                 $totals['cost'] += $cost;
                 $totals['selling'] += $selling;
                 @endphp
