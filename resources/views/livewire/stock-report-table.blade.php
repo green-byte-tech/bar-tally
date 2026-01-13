@@ -60,6 +60,12 @@
                     <th class="p-3 text-center font-medium">Closing</th>
                     <th class="p-3 text-center font-medium">Expected</th>
                     <th class="p-3 text-center font-medium">Variance</th>
+                    {{-- NEW: Counter columns --}}
+                  @foreach($counters as $counterId => $counterName)
+                        <th class="p-3 text-center font-medium">
+                            Counter {{ $counterName }}
+                        </th>
+                    @endforeach
                     <th class="p-3 text-center font-medium">Cost</th>
                     <th class="p-3 text-center font-medium">Selling</th>
                     <th class="p-3 text-center font-medium">Expected Profit</th>
@@ -83,6 +89,7 @@
             ];
             @endphp
 
+
             <tbody>
                 @forelse($grouped as $itemId => $movements)
 
@@ -94,7 +101,7 @@
                 $closing = $movements->where('movement_type','closing_stock')->sum('quantity');
 
                 $expected = $opening + $restock - $sold;
-                $variance = $expected - $closing;
+                $variance = $closing  - $expected;
 
                 $cost = floatval($item->cost_price ?? 0);
                 $selling = floatval($item->selling_price ?? 0);
@@ -111,7 +118,11 @@
                 $totals['profit'] += $profit;
                 $totals['cost'] += $cost;
                 $totals['selling'] += $selling;
+
+                $counterVariances = $this->calculateCounterVariances($movements);
+
                 @endphp
+
 
                 <tr class="transition hover:bg-gray-200/50 dark:hover:bg-gray-700/50">
 
@@ -133,35 +144,43 @@
 
                     <td class="p-3 text-center">{{ $closing }}</td>
                     <td class="p-3 text-center">{{ $expected }}</td>
-
-                    <td class="p-3 text-center font-bold">
-                        @php
-                        $baseClasses = 'inline-flex items-center justify-center min-w-[40px] px-2 py-1 rounded-full text-sm ring-1';
-                        @endphp
-
+                    <td class="p-3 text-center font-semibold">
                         @if ($variance > 0)
-                        <span class="{{ $baseClasses }}
-            bg-green-200 text-green-800 ring-green-400
-            dark:bg-green-900/40 dark:text-green-300 dark:ring-green-600">
-                            +{{ $variance }}
-                        </span>
-
-                        @elseif ($variance < 0)
-                            <span class="{{ $baseClasses }}
-            bg-red-200 text-red-800 ring-red-400
-            dark:bg-red-900/40 dark:text-red-300 dark:ring-red-600">
-                            {{ $variance }}
+                            <span class="text-green-400">
+                                +{{ $variance }}
                             </span>
-
-                            @else
-                            <span class="{{ $baseClasses }}
-            bg-gray-200 text-gray-800 ring-gray-400
-            dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-600">
+                        @elseif ($variance < 0)
+                            <span class="text-red-400">
+                                {{ $variance }}
+                            </span>
+                        @else
+                            <span class="text-gray-500">
                                 0
                             </span>
-                            @endif
+                        @endif
                     </td>
 
+
+                {{-- ✅ Counter columns (INSIDE THE ROW) --}}
+                @foreach($counters as $counterId => $counterName)
+                    @php $cv = $counterVariances[$counterId] ?? 0; @endphp
+                   <td class="p-3 text-center font-semibold">
+                    @if ($cv > 0)
+                        <span class="text-green-400">
+                            +{{ $cv }}
+                        </span>
+                    @elseif ($cv < 0)
+                        <span class="text-red-400">
+                            {{ $cv }}
+                        </span>
+                    @else
+                        <span class="text-gray-500">
+                            0
+                        </span>
+                    @endif
+                </td>
+
+                @endforeach
 
                     <td class="p-3 text-center">{{ number_format($cost, 2) }}</td>
                     <td class="p-3 text-center">{{ number_format($selling, 2) }}</td>
@@ -210,6 +229,19 @@
                             0
                             @endif
                     </td>
+                    @foreach($counters as $counterId => $counterName)
+                    @php $cv = $this->counterVarianceTotals[$counterId] ?? 0; @endphp
+                      <td class="p-3 text-center font-semibold">
+                        @if ($cv > 0)
+                            <span class="text-green-400">+{{ $cv }}</span>
+                        @elseif ($cv < 0)
+                            <span class="text-red-400">{{ $cv }}</span>
+                        @else
+                            <span class="text-gray-500">0</span>
+                        @endif
+                    </td>
+
+                    @endforeach
 
                     <td class="p-3 text-center font-bold">
                         <span class="px-2 py-1 rounded bg-blue-200 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
