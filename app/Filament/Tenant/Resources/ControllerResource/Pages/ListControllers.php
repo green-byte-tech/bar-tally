@@ -37,7 +37,7 @@ class ListControllers extends ListRecords
                 ->label('Open Day')
                 ->icon('heroicon-o-lock-open')
                 ->color('success')
-                ->visible(fn () => ! $sessionService->hasOpenSession($tenantId))
+                // ->visible(fn () => ! $sessionService->hasOpenSession($tenantId))
                 ->action(function () use ($sessionService, $tenantId) {
                     try {
             $sessionService->open($tenantId);
@@ -65,7 +65,7 @@ class ListControllers extends ListRecords
                 ->icon('heroicon-o-lock-closed')
                 ->color('danger')
                 ->requiresConfirmation()
-                ->visible(fn () => $sessionService->hasOpenSession($tenantId))
+                // ->visible(fn () => $sessionService->hasOpenSession($tenantId))
                 ->action(function () use ($sessionService, $tenantId) {
                     try {
                         $sessionService->close($tenantId);

@@ -18,10 +18,10 @@ class DailySessionService
     public function current(int $tenantId): ?DailySession
     {
         return DailySession::query()
-            ->where('tenant_id', $tenantId)
-            ->whereDate('date', today())
-            ->where('is_open', true)
-            ->first();
+                ->where('tenant_id', $tenantId)
+                ->whereDate('date', today())
+                ->where('is_open', true)
+                ->first();
     }
 
     /**
@@ -63,10 +63,13 @@ class DailySessionService
     public function close(int $tenantId): void
     {
         DB::transaction(function () use ($tenantId) {
-
             $session = $this->current($tenantId);
 
             if (! $session) {
+                \Log::warning('Attempted to close day, but no open session found.', [
+                    'tenant_id' => $tenantId,
+                    'user_id' => Auth::id(),
+                ]);
                 throw ValidationException::withMessages([
                     'session' => 'No open day found to close.',
                 ]);
@@ -76,6 +79,13 @@ class DailySessionService
                 'closed_by'    => Auth::id(),
                 'closing_time' => now(),
                 'is_open'      => false,
+            ]);
+
+            \Log::info('Day closed successfully.', [
+                'tenant_id' => $tenantId,
+                'session_id' => $session->id,
+                'closed_by' => Auth::id(),
+                'closing_time' => now(),
             ]);
         });
     }
