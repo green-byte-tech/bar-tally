@@ -95,8 +95,7 @@ class DailySessionService
      */
     public function hasOpenSession(int $tenantId): bool
     {
-        return true;
-        // return (bool) $this->current($tenantId);
+        return (bool) $this->current($tenantId);
     }
 
     /**
