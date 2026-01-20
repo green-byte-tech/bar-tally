@@ -48,7 +48,6 @@ class ControllerResource extends Resource
                 Forms\Components\Section::make('Closing Count')
                     ->description('Record final physical stock at your counter')
                     ->schema([
-
                         // Counter selection – only from user's bar
                         Forms\Components\Select::make('counter_id')
                             ->label('Counter')
@@ -236,7 +235,7 @@ class ControllerResource extends Resource
                         SUM(
                             CASE
                                 WHEN movement_type = 'restock' THEN quantity
-                                WHEN movement_type = 'closing' THEN quantity
+                                WHEN movement_type = 'closing_stock' THEN quantity
                                 WHEN movement_type = 'sale' THEN -quantity
                                 ELSE 0
                             END

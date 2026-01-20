@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Collection;
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\Counter;
@@ -80,17 +81,6 @@ class StockReportTable extends Component
 
         return $query->orderBy('sm.item_id')->get();
     }
-    public array $counterVarianceTotals = [];
-
-    public function resetCounterVarianceTotals(): void
-    {
-        $this->counterVarianceTotals = [];
-
-        foreach ($this->counters as $counterId => $name) {
-            $this->counterVarianceTotals[$counterId] = 0;
-        }
-    }
-
     public function exportCsv()
     {
         $filename = 'stock_report_' . now()->format('Y-m-d_H-i') . '.csv';
@@ -134,10 +124,12 @@ class StockReportTable extends Component
                 $opening = $movements->where('movement_type', 'opening_stock')->sum('quantity');
                 $restock = $movements->where('movement_type', 'restock')->sum('quantity');
                 $sold    = $movements->where('movement_type', 'sale')->sum('quantity');
-                $closing = $movements->where('movement_type', 'closing_stock')->sum('quantity');
+                $closingMovements = $movements->where('movement_type', 'closing_stock');
+                $closingCount = $closingMovements->count();
+                $closing = $closingMovements->sum('quantity');
 
                 $expected = $opening + $restock - $sold;
-                $variance = $expected - $closing;
+                $variance = $closingCount === 0 ? null : $closing - $expected;
 
                 $cost    = floatval($item->cost_price ?? 0);
                 $selling = floatval($item->selling_price ?? 0);
@@ -148,7 +140,9 @@ class StockReportTable extends Component
                 $totalSold    += $sold;
                 $totalClosing += $closing;
                 $totalExpected += $expected;
-                $totalVariance += $variance;
+                if ($variance !== null) {
+                    $totalVariance += $variance;
+                }
                 $totalProfit   += $profit;
 
                 fputcsv($file, [
@@ -158,7 +152,7 @@ class StockReportTable extends Component
                     $sold,
                     $closing,
                     $expected,
-                    $variance,
+                    $variance ?? '',
                     $cost,
                     $selling,
                     $profit,
@@ -183,6 +177,78 @@ class StockReportTable extends Component
 
         return response()->stream($callback, 200, $header);
     }
+
+    private function buildTotals(Collection $grouped): array
+    {
+        $totals = [
+            'opening' => 0,
+            'restock' => 0,
+            'sold' => 0,
+            'closing' => 0,
+            'expected' => 0,
+            'variance' => 0,
+            'profit' => 0,
+            'cost_value' => 0,
+            'selling_value' => 0,
+        ];
+        $varianceAvailable = false;
+        $counterVarianceTotals = [];
+        $counterVarianceHasData = [];
+
+        foreach ($this->counters as $counterId => $counterName) {
+            $counterVarianceTotals[$counterId] = 0;
+            $counterVarianceHasData[$counterId] = false;
+        }
+
+        foreach ($grouped as $movements) {
+            $item = $movements->first();
+            $opening = $movements->where('movement_type', 'opening_stock')->sum('quantity');
+            $restock = $movements->where('movement_type', 'restock')->sum('quantity');
+            $sold    = $movements->where('movement_type', 'sale')->sum('quantity');
+            $closingMovements = $movements->where('movement_type', 'closing_stock');
+            $closingCount = $closingMovements->count();
+            $closing = $closingMovements->sum('quantity');
+
+            $expected = $opening + $restock - $sold;
+            $variance = $closingCount === 0 ? $expected : $closing - $expected;
+
+            $cost    = floatval($item->cost_price ?? 0);
+            $selling = floatval($item->selling_price ?? 0);
+            $profit  = $sold * ($selling - $cost);
+            $costValue = $cost;
+            $sellingValue = $selling;
+
+            $totals['opening'] += $opening;
+            $totals['restock'] += $restock;
+            $totals['sold'] += $sold;
+            $totals['closing'] += $closing;
+            $totals['expected'] += $expected;
+            if ($variance !== null) {
+                $totals['variance'] += $variance;
+                $varianceAvailable = true;
+            }
+            $totals['profit'] += $profit;
+            $totals['cost_value'] += $costValue;
+            $totals['selling_value'] += $sellingValue;
+
+            $counterVariances = $this->calculateCounterVariances($movements);
+            foreach ($counterVariances as $counterId => $cv) {
+                if ($cv === null) {
+                    continue;
+                }
+                $counterVarianceTotals[$counterId] += $cv;
+                $counterVarianceHasData[$counterId] = true;
+            }
+        }
+
+        return [
+            'totals' => $totals,
+            'varianceAvailable' => $varianceAvailable,
+            'counterVarianceTotals' => $counterVarianceTotals,
+            'counterVarianceHasData' => $counterVarianceHasData,
+        ];
+    }
+
    public function calculateCounterVariances($movements): array
 {
     $variances = [];
@@ -193,12 +259,12 @@ class StockReportTable extends Component
         $opening = $counterMovements->where('movement_type', 'opening_stock')->sum('quantity');
         $restock = $counterMovements->where('movement_type', 'restock')->sum('quantity');
         $sold    = $counterMovements->where('movement_type', 'sale')->sum('quantity');
-        $closing = $counterMovements->where('movement_type', 'closing_stock')->sum('quantity');
+        $closingMovements = $counterMovements->where('movement_type', 'closing_stock');
+        $closingCount = $closingMovements->count();
+        $closing = $closingMovements->sum('quantity');
 
         $expected = $opening + $restock - $sold;
-
-        // 🔴 FIX: invert variance definition
-        $variances[$counterId] = $closing - $expected;
+        $variances[$counterId] = $closingCount === 0 ? $expected : $closing - $expected;
     }
 
     return $variances;
@@ -207,12 +273,18 @@ class StockReportTable extends Component
 
     public function render()
     {
-        $this->resetCounterVarianceTotals();
+        $totalsData = $this->buildTotals(
+            $this->allRows()->groupBy('item_id')
+        );
 
         return view('livewire.stock-report-table', [
             'rows' => $this->rows, // paginated
             'items' => \App\Models\Item::orderBy('name')->get(),
             'counters' => $this->counters,
+            'totals' => $totalsData['totals'],
+            'varianceAvailable' => $totalsData['varianceAvailable'],
+            'counterVarianceTotals' => $totalsData['counterVarianceTotals'],
+            'counterVarianceHasData' => $totalsData['counterVarianceHasData'],
 
         ]);
     }

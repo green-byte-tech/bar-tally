@@ -75,18 +75,6 @@
             @php
             $grouped = $rows->groupBy('item_id');
 
-            // Totals accumulator
-            $totals = [
-            'opening' => 0,
-            'restock' => 0,
-            'sold' => 0,
-            'closing' => 0,
-            'expected' => 0,
-            'variance' => 0,
-            'profit' => 0,
-            'cost' => 0,
-            'selling' => 0,
-            ];
             @endphp
 
 
@@ -98,26 +86,16 @@
                 $opening = $movements->where('movement_type','opening_stock')->sum('quantity');
                 $restock = $movements->where('movement_type','restock')->sum('quantity');
                 $sold = $movements->where('movement_type','sale')->sum('quantity');
-                $closing = $movements->where('movement_type','closing_stock')->sum('quantity');
+                $closingMovements = $movements->where('movement_type','closing_stock');
+                $closingCount = $closingMovements->count();
+                $closing = $closingMovements->sum('quantity');
 
                 $expected = $opening + $restock - $sold;
-                $variance = $closing  - $expected;
+                $variance = $closingCount === 0 ? $expected : $closing - $expected;
 
                 $cost = floatval($item->cost_price ?? 0);
                 $selling = floatval($item->selling_price ?? 0);
-                $finalprofit = ($cost* $sold) - ($selling * $sold);
                 $profit = $sold * ($selling - $cost);
-
-                // Accumulate totals
-                $totals['opening'] += $opening;
-                $totals['restock'] += $restock;
-                $totals['sold'] += $sold;
-                $totals['closing'] += $closing;
-                $totals['expected'] += $expected;
-                $totals['variance'] += $variance;
-                $totals['profit'] += $profit;
-                $totals['cost'] += $cost;
-                $totals['selling'] += $selling;
 
                 $counterVariances = $this->calculateCounterVariances($movements);
 
@@ -163,7 +141,9 @@
 
                 {{-- ✅ Counter columns (INSIDE THE ROW) --}}
                 @foreach($counters as $counterId => $counterName)
-                    @php $cv = $counterVariances[$counterId] ?? 0; @endphp
+                    @php
+                        $cv = $counterVariances[$counterId] ?? null;
+                    @endphp
                    <td class="p-3 text-center font-semibold">
                     @if ($cv > 0)
                         <span class="text-green-400">
@@ -233,7 +213,10 @@
 
                     </td>
                     @foreach($counters as $counterId => $counterName)
-                    @php $cv = $this->counterVarianceTotals[$counterId] ?? 0; @endphp
+                    @php
+                        $cv = $counterVarianceTotals[$counterId] ?? 0;
+                        $hasData = $counterVarianceHasData[$counterId] ?? false;
+                    @endphp
                       <td class="p-3 text-center font-semibold">
                         @if ($cv > 0)
                             <span class="text-green-400">+{{ $cv }}</span>
@@ -248,12 +231,12 @@
 
                     <td class="p-3 text-center font-bold">
                         <span class="px-2 py-1 rounded bg-blue-200 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
-                            KES {{ number_format($totals['cost'], 2) }}
+                            KES {{ number_format($totals['cost_value'], 2) }}
                         </span>
                     </td>
                     <td class="p-3 text-center font-bold">
                         <span class="px-2 py-1 rounded bg-blue-200 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
-                            KES {{ number_format($totals['selling'], 2) }}
+                            KES {{ number_format($totals['selling_value'], 2) }}
                         </span>
                     </td>
 

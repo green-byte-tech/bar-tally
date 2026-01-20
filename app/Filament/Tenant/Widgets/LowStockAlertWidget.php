@@ -25,7 +25,7 @@ class LowStockAlertWidget extends BaseWidget
                 SUM(
                     CASE
                         WHEN stock_movements.movement_type = 'restock' THEN stock_movements.quantity
-                        WHEN stock_movements.movement_type = 'closing' THEN stock_movements.quantity
+                        WHEN stock_movements.movement_type = 'closing_stock' THEN stock_movements.quantity
                         WHEN stock_movements.movement_type = 'sale' THEN -stock_movements.quantity
                         ELSE 0
                     END
