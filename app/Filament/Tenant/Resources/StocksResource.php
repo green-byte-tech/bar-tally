@@ -181,6 +181,7 @@ class StocksResource extends Resource
         ")
                     ->where('tenant_id', auth()->user()->tenant_id)
                     ->where('movement_type', StockMovementType::RESTOCK)
+                    ->whereDate('movement_date', today())
                     ->groupBy('item_id', 'movement_date', 'created_at')
             )
 
