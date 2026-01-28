@@ -201,6 +201,7 @@ class DailySaleResource extends Resource
                             ->label('To')
                             ->default(today()),
                     ])
+                    ->columns(2)
                     ->query(function ($query, array $data) {
                         return $query
                             ->when(
@@ -214,6 +215,8 @@ class DailySaleResource extends Resource
                     })
                     ->default(),
             ])
+            ->filtersLayout(Tables\Enums\FiltersLayout::AboveContent)
+            ->filtersFormColumns(2)
 
             ->columns([
 

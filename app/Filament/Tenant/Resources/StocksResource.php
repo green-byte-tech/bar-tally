@@ -193,6 +193,7 @@ class StocksResource extends Resource
                             ->label('To')
                             ->default(today()),
                     ])
+                    ->columns(2)
                     ->query(function ($query, array $data) {
                         return $query
                             ->when(
@@ -206,6 +207,8 @@ class StocksResource extends Resource
                     })
                     ->default(),
             ])
+            ->filtersLayout(Tables\Enums\FiltersLayout::AboveContent)
+            ->filtersFormColumns(2)
 
             ->columns([
                 Tables\Columns\TextColumn::make('created_at')
