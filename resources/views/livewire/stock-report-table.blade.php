@@ -14,14 +14,25 @@
     </div>
 
     <!-- FILTERS -->
-    <div class="flex gap-4">
+    <div class="flex flex-wrap gap-6">
 
-        <!-- Date Filter -->
+        <!-- Date Range Filter -->
         <div class="flex flex-col">
-            <label class="text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">Date</label>
+            <label class="text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">From</label>
             <input type="date"
-                wire:model.live="date"
-                class="px-3 py-2 rounded-lg border
+                wire:model.live="dateFrom"
+                class="w-56 px-3 py-2 rounded-lg border
+                       bg-white text-gray-800
+                       border-gray-300
+                       dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700
+                       focus:border-primary-500 focus:ring-primary-500" />
+        </div>
+
+        <div class="flex flex-col">
+            <label class="text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">To</label>
+            <input type="date"
+                wire:model.live="dateTo"
+                class="w-56 px-3 py-2 rounded-lg border
                        bg-white text-gray-800
                        border-gray-300
                        dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700
@@ -29,7 +40,7 @@
         </div>
 
         <!-- Item Filter -->
-        <div class="flex flex-col">
+        <div class="flex flex-col min-w-[16rem]">
             <label class="text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">Item</label>
             <select wire:model.live="item"
                 class="px-3 py-2 rounded-lg border

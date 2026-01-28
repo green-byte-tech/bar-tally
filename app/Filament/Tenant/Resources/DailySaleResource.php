@@ -192,6 +192,26 @@ class DailySaleResource extends Resource
                     ->whereDate('movement_date', today())
                     ->groupBy('item_id', 'movement_date', 'created_at')
             )
+            ->filters([
+                Tables\Filters\Filter::make('movement_date')
+                    ->form([
+                        Forms\Components\DatePicker::make('from')
+                            ->label('From'),
+                        Forms\Components\DatePicker::make('to')
+                            ->label('To'),
+                    ])
+                    ->query(function ($query, array $data) {
+                        return $query
+                            ->when(
+                                $data['from'] ?? null,
+                                fn($q, $date) => $q->whereDate('movement_date', '>=', $date)
+                            )
+                            ->when(
+                                $data['to'] ?? null,
+                                fn($q, $date) => $q->whereDate('movement_date', '<=', $date)
+                            );
+                    }),
+            ])
 
             ->columns([
 

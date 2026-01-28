@@ -12,14 +12,20 @@ class StockReportTable extends Component
 {
     use WithPagination;
 
-    public $date;
+    public $dateFrom;
+    public $dateTo;
     public $item;
     public array $counters = [];
 
 
     protected $paginationTheme = 'tailwind';
 
-    public function updatedDate()
+    public function updatedDateFrom()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedDateTo()
     {
         $this->resetPage();
     }
@@ -31,7 +37,8 @@ class StockReportTable extends Component
 
     public function mount()
     {
-        $this->date = today()->toDateString();
+        $this->dateFrom = today()->toDateString();
+        $this->dateTo = today()->toDateString();
         $this->item = null;
         $this->counters = Counter::orderBy('name')
             ->pluck('name', 'id')
@@ -49,8 +56,9 @@ class StockReportTable extends Component
                 'i.selling_price',
                 'i.cost_price',
                 'c.name as counter_name'
-            )
-            ->where('sm.movement_date', $this->date);
+            );
+
+        $this->applyDateRange($query);
 
         if ($this->item) {
             $query->where('sm.item_id', $this->item);
@@ -73,13 +81,32 @@ class StockReportTable extends Component
                 'i.cost_price',
 
             )
-            ->where('sm.movement_date', $this->date);
+            ;
+
+        $this->applyDateRange($query);
 
         if ($this->item) {
             $query->where('sm.item_id', $this->item);
         }
 
         return $query->orderBy('sm.item_id')->get();
+    }
+
+    private function applyDateRange($query): void
+    {
+        if ($this->dateFrom && $this->dateTo) {
+            $query->whereBetween('sm.movement_date', [$this->dateFrom, $this->dateTo]);
+            return;
+        }
+
+        if ($this->dateFrom) {
+            $query->whereDate('sm.movement_date', '>=', $this->dateFrom);
+            return;
+        }
+
+        if ($this->dateTo) {
+            $query->whereDate('sm.movement_date', '<=', $this->dateTo);
+        }
     }
     public function exportCsv()
     {
