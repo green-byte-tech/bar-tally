@@ -19,7 +19,6 @@ class DailySessionService
     {
         return DailySession::query()
                 ->where('tenant_id', $tenantId)
-                ->whereDate('date', today())
                 ->where('is_open', true)
                 ->first();
     }

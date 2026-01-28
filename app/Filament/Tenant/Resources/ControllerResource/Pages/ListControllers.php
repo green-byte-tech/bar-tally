@@ -30,6 +30,16 @@ class ListControllers extends ListRecords
         $sessionService = app(DailySessionService::class);
 
         return [
+            Action::make('closePreviousDayNotice')
+                ->label('Close previous day before starting a new day')
+                ->icon('heroicon-o-exclamation-triangle')
+                ->color('warning')
+                ->disabled() 
+                ->visible(function () use ($sessionService, $tenantId) {
+                    $session = $sessionService->current($tenantId);
+
+                    return $session && \Carbon\Carbon::parse($session->date)->lt(today());
+                }),
              /* =========================
              | OPEN DAY
              * ========================= */
