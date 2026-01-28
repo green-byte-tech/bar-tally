@@ -13,14 +13,26 @@ use Illuminate\Database\QueryException;
 class DailySessionService
 {
     /**
-     * Get current open session
+     * Get current open session (any date)
      */
-    public function current(int $tenantId): ?DailySession
+    public function currentOpenAny(int $tenantId): ?DailySession
     {
         return DailySession::query()
-                ->where('tenant_id', $tenantId)
-                ->where('is_open', true)
-                ->first();
+            ->where('tenant_id', $tenantId)
+            ->where('is_open', true)
+            ->first();
+    }
+
+    /**
+     * Get current open session for today
+     */
+    public function currentOpenToday(int $tenantId): ?DailySession
+    {
+        return DailySession::query()
+            ->where('tenant_id', $tenantId)
+            ->whereDate('date', today())
+            ->where('is_open', true)
+            ->first();
     }
 
     /**
@@ -31,9 +43,13 @@ class DailySessionService
         try {
             return DB::transaction(function () use ($tenantId) {
 
-                if ($this->current($tenantId)) {
+                $openSession = $this->currentOpenAny($tenantId);
+                if ($openSession) {
+                    $message = \Carbon\Carbon::parse($openSession->date)->lt(today())
+                        ? 'Close the previous day before starting a new day.'
+                        : 'The day is already open.';
                     throw ValidationException::withMessages([
-                        'day' => 'The day is already open.',
+                        'day' => $message,
                     ]);
                 }
 
@@ -62,7 +78,7 @@ class DailySessionService
     public function close(int $tenantId): void
     {
         DB::transaction(function () use ($tenantId) {
-            $session = $this->current($tenantId);
+            $session = $this->currentOpenAny($tenantId);
 
             if (! $session) {
                 \Log::warning('Attempted to close day, but no open session found.', [
@@ -94,7 +110,15 @@ class DailySessionService
      */
     public function hasOpenSession(int $tenantId): bool
     {
-        return (bool) $this->current($tenantId);
+        return (bool) $this->currentOpenToday($tenantId);
+    }
+
+    /**
+     * Check if any day is open
+     */
+    public function hasAnyOpenSession(int $tenantId): bool
+    {
+        return (bool) $this->currentOpenAny($tenantId);
     }
 
     /**
@@ -116,7 +140,7 @@ class DailySessionService
             // ]);
         }
 
-        $session = $this->current($tenantId);
+        $session = $this->currentOpenToday($tenantId);
 
         if (! $session) {
             throw ValidationException::withMessages([

@@ -36,7 +36,7 @@ class ListControllers extends ListRecords
                 ->color('warning')
                 ->disabled() 
                 ->visible(function () use ($sessionService, $tenantId) {
-                    $session = $sessionService->current($tenantId);
+                    $session = $sessionService->currentOpenAny($tenantId);
 
                     return $session && \Carbon\Carbon::parse($session->date)->lt(today());
                 }),
@@ -47,7 +47,7 @@ class ListControllers extends ListRecords
                 ->label('Open Day')
                 ->icon('heroicon-o-lock-open')
                 ->color('success')
-                ->visible(fn () => ! $sessionService->hasOpenSession($tenantId))
+                ->visible(fn () => ! $sessionService->hasAnyOpenSession($tenantId))
                 ->action(function () use ($sessionService, $tenantId) {
                     try {
             $sessionService->open($tenantId);
@@ -75,7 +75,7 @@ class ListControllers extends ListRecords
                 ->icon('heroicon-o-lock-closed')
                 ->color('danger')
                 ->requiresConfirmation()
-                ->visible(fn () => $sessionService->hasOpenSession($tenantId))
+                ->visible(fn () => $sessionService->hasAnyOpenSession($tenantId))
                 ->action(function () use ($sessionService, $tenantId) {
                     try {
                         $sessionService->close($tenantId);

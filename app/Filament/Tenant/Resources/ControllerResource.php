@@ -182,9 +182,11 @@ class ControllerResource extends Resource
                 Tables\Filters\Filter::make('movement_date')
                     ->form([
                         Forms\Components\DatePicker::make('from')
-                            ->label('From'),
+                            ->label('From')
+                            ->default(today()),
                         Forms\Components\DatePicker::make('to')
-                            ->label('To'),
+                            ->label('To')
+                            ->default(today()),
                     ])
                     ->query(function ($query, array $data) {
                         return $query
@@ -196,7 +198,8 @@ class ControllerResource extends Resource
                                 $data['to'] ?? null,
                                 fn($q, $date) => $q->whereDate('movement_date', '<=', $date)
                             );
-                    }),
+                    })
+                    ->default(),
             ])
 
             /* =========================
