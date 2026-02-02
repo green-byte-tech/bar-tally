@@ -9,7 +9,7 @@ use Filament\Actions\Action;
 class TestJobPage extends Page
 {
     protected static ?string $navigationIcon = 'heroicon-o-bolt';
-    protected static ?string $navigationLabel = 'Test Job';
+    protected static ?string $navigationLabel = 'Test Jobs';
     protected static ?string $navigationGroup = 'Testing';
     protected static ?int $navigationSort = 1;
     protected static bool $shouldRegisterNavigation = false; // This hides it from the menu
