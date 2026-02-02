@@ -12,6 +12,10 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 class Dashboard extends BaseDashboard
 {
 
+    protected static ?string $navigationLabel = 'Dashboard';
+    protected static ?string $navigationGroup = 'Dashboard';
+    protected static ?int $navigationSort = 1;
+    protected static bool $shouldRegisterNavigation = false; // This hides it from the menu
 
     public function panel(Panel $panel): Panel
     {
